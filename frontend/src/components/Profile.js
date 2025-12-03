@@ -4,12 +4,13 @@ import axios from "axios";
 export default function Profile() {
   const [user, setUser] = useState(null);
   const [stats, setStats] = useState({
-    totalQuizzes: 12,
-    avgScore: 78,
-    bestScore: 95,
-    attempts: 25
+    "a":0
   });
-
+    const formatKey = (key) => {
+        return key
+        .replace(/([A-Z])/g, " $1")         // convert camelCase to words
+        .replace(/^./, str => str.toUpperCase());  // capitalize first letter
+    };
   // Modal States
   const [showEditModal, setShowEditModal] = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
@@ -34,6 +35,7 @@ export default function Profile() {
       });
 
       setUser(res.data.user);
+      setStats(res.data.user.stats);
     } catch (err) {
       alert("Session expired! Login again.");
       window.location.href = "/auth";
@@ -152,28 +154,14 @@ export default function Profile() {
 
         {/* Stats Cards */}
         <div style={styles.statsContainer}>
-          <div style={styles.statCard}>
-            <h3 style={styles.statNumber}>{stats.totalQuizzes}</h3>
-            <p style={styles.statLabel}>Total Quizzes</p>
-          </div>
-
-          <div style={styles.statCard}>
-            <h3 style={styles.statNumber}>{stats.avgScore}%</h3>
-            <p style={styles.statLabel}>Average Score</p>
-          </div>
-
-          <div style={styles.statCard}>
-            <h3 style={styles.statNumber}>{stats.bestScore}%</h3>
-            <p style={styles.statLabel}>Best Score</p>
-          </div>
-
-          <div style={styles.statCard}>
-            <h3 style={styles.statNumber}>{stats.attempts}</h3>
-            <p style={styles.statLabel}>Quiz Attempts</p>
-          </div>
+        {Object.entries(stats).map(([key, value], idx) => (
+            <div key={idx} style={styles.statCard}>
+                <h3 style={styles.statNumber}>{value}</h3>
+                <p style={styles.statLabel}>{formatKey(key)}</p>
+            </div>
+        ))}
         </div>
-
-      </div>
+        </div>
 
       {/* ---------------------- Edit Profile Modal ---------------------- */}
       {showEditModal && (

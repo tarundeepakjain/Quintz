@@ -27,12 +27,20 @@ mongo = PyMongo(app)
 CORS(app)
 @app.route("/signup", methods=["POST"])
 def register():
+    statAdmin={"totalQuizzes": 0,"Total Participants": 0,"Avg Quizzes (per Year)":0,"MM Quiz made":0}
+    statStudent={"totalQuizzes": 0,"avgScore": 0,"bestScore": 0,"attempts": 0}
     userCred = request.json
     user = mongo.db.users.find_one({"username":userCred["username"]})
     if not user:
         hashed_password = generate_password_hash(userCred["password"])
-        userCred["password"]=hashed_password
-        mongo.db.users.insert_one(userCred)
+        mongo.db.users.insert_one({
+            "userType":userCred["userType"],
+            "name":userCred["name"],
+            "username":userCred["username"],
+            "password":hashed_password,
+            "Quizzes":[],
+            "stats": statAdmin if userCred["userType"]=="admin" else statStudent
+        })
         return jsonify(message="User Registered Successfully");
     else:
         return jsonify(message="User Already Exist.")
@@ -64,7 +72,8 @@ def profile():
         "user":{
             "name":user["name"],
             "username":user["username"],
-            "userType":user["userType"]
+            "userType":user["userType"],
+            "stats":user["stats"]
         }
     })
 
