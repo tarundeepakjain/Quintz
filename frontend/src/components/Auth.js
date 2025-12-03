@@ -37,8 +37,10 @@ export default function QuintzAuth() {
     });
 
     console.log(res.data);
+    localStorage.setItem("access", res.data.access_token);
+    //localStorage.setItem("refresh", res.data.refresh_token);
     alert(res.data.message);
-    window.location.href="/homepage";
+    window.location.href="/profile";
   };
 
   const handleSignup = async (e) => {
@@ -254,187 +256,193 @@ export default function QuintzAuth() {
 
 const styles = {
   authBody: {
-    fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
-    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-    height: '100dvh',                 // full screen height
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: '0',
+    fontFamily: "'Poppins', sans-serif",
+    backgroundImage : "url('/loginBg.png')",
+    height: "100vh",
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 0,
     margin: 0,
-    overflow: 'hidden'                // REMOVE SCROLL
   },
 
   container: {
-    background: 'white',
-    borderRadius: '16px',
-    boxShadow: '0 10px 40px rgba(0, 0, 0, 0.3)',
-    overflow: 'hidden',
-    width: '100%',
-    maxWidth: '450px',
-    height: '92vh',                   // keep entire UI inside screen
-    display: 'flex',
-    flexDirection: 'column'
+    background: "white",
+    borderRadius: "20px",
+    boxShadow: "0 12px 45px rgba(0,0,0,0.18)",
+    overflow: "hidden",
+    width: "100%",
+    maxWidth: "450px",
+    height: "90vh",
+    display: "flex",
+    flexDirection: "column",
   },
 
   header: {
-    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-    padding: '30px 20px',             // reduced from 50px+
-    textAlign: 'center',
-    color: 'white'
+    background: "linear-gradient(135deg, #6a11cb 0%, #8e63ff 100%)",
+    padding: "40px 20px",
+    textAlign: "center",
+    color: "white",
   },
 
   headerContent: {
-    position: 'relative',
-    zIndex: 1
+    position: "relative",
+    zIndex: 1,
   },
 
   logo: {
-    fontSize: '34px',                 // reduced
-    fontWeight: '800',
-    marginBottom: '6px',
-    letterSpacing: '3px'
+    fontSize: "38px",
+    fontWeight: "800",
+    letterSpacing: "3px",
+    marginBottom: "6px",
   },
 
   tagline: {
-    fontSize: '13px',
-    opacity: 0.95,
-    marginBottom: '10px'
+    fontSize: "14px",
+    opacity: 0.9,
+    marginBottom: "12px",
   },
 
   userTypeBadge: {
-    display: 'inline-flex',
-    alignItems: 'center',
-    gap: '6px',
-    padding: '6px 14px',
-    background: 'rgba(255, 255, 255, 0.25)',
-    borderRadius: '18px',
-    fontSize: '12px'
+    display: "inline-flex",
+    gap: "8px",
+    alignItems: "center",
+    padding: "6px 18px",
+    background: "rgba(255,255,255,0.25)",
+    borderRadius: "20px",
+    fontSize: "13px",
+    fontWeight: "600",
   },
 
   badgeIcon: {
-    width: '14px',
-    height: '14px',
-    background: 'white',
-    borderRadius: '50%',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    fontSize: '9px'
+    width: "18px",
+    height: "18px",
+    background: "white",
+    borderRadius: "50%",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    fontSize: "10px",
   },
 
   toggleContainer: {
-    display: 'flex',
-    background: '#f0f0f0',
-    borderRadius: '20px',
-    padding: '4px',
-    margin: '12px 25px',
-    position: 'relative'
+    display: "flex",
+    background: "#f0e8ff",
+    borderRadius: "25px",
+    padding: "4px",
+    margin: "18px 40px",
+    position: "relative",
   },
 
   toggleBtn: {
     flex: 1,
-    padding: '10px',
-    border: 'none',
-    background: 'transparent',
-    cursor: 'pointer',
-    fontSize: '13px',
-    fontWeight: '600',
-    zIndex: 1
+    padding: "12px",
+    border: "none",
+    background: "transparent",
+    fontSize: "14px",
+    fontWeight: "600",
+    cursor: "pointer",
+    zIndex: 2,
   },
 
   toggleSlider: {
-    position: 'absolute',
-    top: '4px',
-    left: '4px',
-    width: 'calc(50% - 4px)',
-    height: 'calc(100% - 8px)',
-    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-    borderRadius: '20px',
-    transition: 'transform 0.3s ease'
+    position: "absolute",
+    top: "4px",
+    left: "4px",
+    width: "50%",
+    height: "calc(100% - 8px)",
+    background: "linear-gradient(135deg, #6a11cb 0%, #8e63ff 100%)",
+    borderRadius: "20px",
+    transition: "transform 0.3s ease",
   },
 
   formSection: {
-    flex: 1,                          // fills remaining height
-    overflowY: 'auto',                // scroll ONLY inside form if needed
-    paddingBottom: '10px'
+    flex: 1,
+    overflowY: "auto",
+    paddingBottom: "10px",
   },
 
   formContainer: {
-    padding: '20px'
+    padding: "25px 30px",
   },
 
   formTitle: {
-    marginBottom: '15px',
-    color: '#333',
-    fontSize: '20px'
+    marginBottom: "20px",
+    color: "#333",
+    fontSize: "22px",
+    fontWeight: "700",
   },
 
   formGroup: {
-    marginBottom: '15px'
+    marginBottom: "18px",
   },
 
   label: {
-    display: 'block',
-    marginBottom: '6px',
-    color: '#333',
-    fontWeight: '600',
-    fontSize: '13px'
+    display: "block",
+    marginBottom: "6px",
+    color: "#444",
+    fontWeight: "600",
+    fontSize: "14px",
   },
 
   input: {
-    width: '100%',
-    padding: '12px',
-    border: '2px solid #e0e0e0',
-    borderRadius: '8px',
-    fontSize: '14px'
+    width: "100%",
+    padding: "12px",
+    border: "2px solid #e4d7ff",
+    borderRadius: "10px",
+    fontSize: "14px",
+    transition: "0.2s",
   },
 
   submitBtn: {
-    width: '100%',
-    padding: '12px',
-    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-    color: 'white',
-    border: 'none',
-    borderRadius: '8px',
-    fontSize: '15px',
-    fontWeight: '600',
-    cursor: 'pointer',
-    marginTop: '8px'
+    width: "100%",
+    padding: "12px",
+    background: "linear-gradient(135deg, #6a11cb 0%, #8e63ff 100%)",
+    color: "white",
+    border: "none",
+    borderRadius: "10px",
+    fontSize: "16px",
+    fontWeight: "600",
+    cursor: "pointer",
+    marginTop: "8px",
+    boxShadow: "0 6px 18px rgba(106, 17, 203, 0.4)",
+    transition: "0.2s",
   },
 
   divider: {
-    textAlign: 'center',
-    margin: '18px 0',
-    color: '#999',
-    fontSize: '13px'
+    textAlign: "center",
+    margin: "22px 0 15px",
+    color: "#888",
+    fontSize: "13px",
   },
 
   googleBtn: {
-    width: '100%',
-    padding: '12px',
-    background: 'white',
-    border: '2px solid #e0e0e0',
-    borderRadius: '8px',
-    fontSize: '14px',
-    fontWeight: '600',
-    cursor: 'pointer',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: '8px'
+    width: "100%",
+    padding: "12px",
+    background: "white",
+    border: "2px solid #e4d7ff",
+    borderRadius: "10px",
+    fontSize: "15px",
+    fontWeight: "600",
+    cursor: "pointer",
+    display: "flex",
+    gap: "10px",
+    alignItems: "center",
+    justifyContent: "center",
+    transition: "0.2s",
   },
 
   switchForm: {
-    textAlign: 'center',
-    marginTop: '12px',
-    color: '#666',
-    fontSize: '13px'
+    marginTop: "15px",
+    textAlign: "center",
+    fontSize: "14px",
+    color: "#666",
   },
 
   link: {
-    color: '#667eea',
-    fontWeight: '600',
-    cursor: 'pointer'
-  }
+    color: "#6a11cb",
+    fontWeight: "700",
+    cursor: "pointer",
+  },
 };
+

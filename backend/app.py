@@ -12,12 +12,13 @@ from flask_cors import CORS
 
 from werkzeug.security import generate_password_hash, check_password_hash
 
+from datetime import timedelta
 load_dotenv()
 
 app = Flask(__name__)
-
 # Setup the Flask-JWT-Extended extension
 app.config["JWT_SECRET_KEY"] = os.environ.get("JWT_SECRET_KEY")  # Change this!
+app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(days=7) #Login Required in every 7 days
 jwt = JWTManager(app)
 
 app.config["MONGO_URI"] = os.environ.get("MONGO_URI")
@@ -49,6 +50,48 @@ def login():
     print(access_token)
     return jsonify(message="User Found",access_token=access_token)
     
+@app.route("/profile",methods=["GET"])
+@jwt_required()
+def profile():
+    currUser = get_jwt_identity()
+    user = mongo.db.users.find_one({"username":currUser})
+    if not user:
+        return jsonify({
+            "message":"User Not Found"
+        }),404
+    return jsonify({
+        "message":"Profile Found",
+        "user":{
+            "name":user["name"],
+            "username":user["username"],
+            "userType":user["userType"]
+        }
+    })
+
+@app.route("/edit-profile",methods=["POST"])
+@jwt_required()
+def editProfile():
+    currUser=get_jwt_identity()
+    data = request.json
+
+    user = mongo.db.users.update_one({"username":data["username"]},{"$set":{"name":data["name"]}})
+    if not user:
+        return jsonify(message="User Not Found")
+    return jsonify(message="Changes Updated Successfully.")
+
+@app.route("/change-password",methods=["POST"])
+@jwt_required()
+def changePass():
+    currUser=get_jwt_identity()
+    data = request.json
+    hashed_password = generate_password_hash(data["newPass"])
+    user = mongo.db.users.find_one({"username":data["username"]})
+    if not user:
+        return jsonify(message="User Not Found")
+    if check_password_hash(user["password"],data["oldPass"]):
+        user = mongo.db.users.update_one({"username":data["username"]},{"$set":{"password":hashed_password}})
+        return jsonify(message="Password Changed Successfully.")
+    return jsonify(message="Old Password is Wrong.")
 
 if __name__ == "__main__":
     app.run(port=5001,debug=True)
