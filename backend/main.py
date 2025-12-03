@@ -1,12 +1,16 @@
 import os
-from flask import Flask
-from flask import jsonify
-from flask import request
+
+from flask import Flask,request,jsonify
+
 from dotenv import load_dotenv
-from flask_jwt_extended import create_access_token
-from flask_jwt_extended import get_jwt_identity
-from flask_jwt_extended import jwt_required
-from flask_jwt_extended import JWTManager
+
+from flask_pymongo import PyMongo
+
+from flask_jwt_extended import create_access_token, get_jwt_identity, jwt_required, JWTManager
+
+from flask_cors import CORS
+
+from werkzeug.security import generate_password_hash, check_password_hash
 
 load_dotenv()
 
@@ -16,29 +20,35 @@ app = Flask(__name__)
 app.config["JWT_SECRET_KEY"] = os.environ.get("JWT_SECRET_KEY")  # Change this!
 jwt = JWTManager(app)
 
+app.config["MONGO_URI"] = os.environ.get("MONGO_URI")
+mongo = PyMongo(app)
 
-# Create a route to authenticate your users and return JWTs. The
-# create_access_token() function is used to actually generate the JWT.
-@app.route("/auth", methods=["POST"])
+CORS(app)
+@app.route("/signup", methods=["POST"])
+def register():
+    userCred = request.json
+    user = mongo.db.users.find_one({"username":userCred["username"]})
+    if not user:
+        hashed_password = generate_password_hash(userCred["password"])
+        userCred["password"]=hashed_password
+        mongo.db.users.insert_one(userCred)
+        return jsonify(message="User Registered Successfully");
+    else:
+        return jsonify(message="User Already Exist.")
+
+@app.route("/login",methods=["POST"])
 def login():
-    username = request.json.get("username", None)
-    password = request.json.get("password", None)
-    if username != "test" or password != "test":
-        return jsonify({"msg": "Bad username or password"}), 401
+    data = request.json
+    user = mongo.db.users.find_one({"username":data["username"]})
 
-    access_token = create_access_token(identity=username)
-    return jsonify(access_token=access_token)
-
-
-# Protect a route with jwt_required, which will kick out requests
-# without a valid JWT present.
-@app.route("/protected", methods=["GET"])
-@jwt_required()
-def protected():
-    # Access the identity of the current user with get_jwt_identity
-    current_user = get_jwt_identity()
-    return jsonify(logged_in_as=current_user), 200
-
+    if not user or not check_password_hash(user["password"],data["password"]) or user["userType"]!=data["userType"]:
+        return jsonify({
+            "message":"Username or password is invalid."
+        })
+    access_token = create_access_token(identity=data["username"])
+    print(access_token)
+    return jsonify(message="User Found",access_token=access_token)
+    
 
 if __name__ == "__main__":
-    app.run(PORT=5000,debug=True)
+    app.run(port=5001,debug=True)

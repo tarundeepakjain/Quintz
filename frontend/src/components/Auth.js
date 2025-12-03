@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import axios from 'axios';
 
 export default function QuintzAuth() {
   const [currentUserType, setCurrentUserType] = useState('student');
@@ -27,32 +28,35 @@ export default function QuintzAuth() {
     });
   };
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
-    console.log('Login attempt:', {
+    const res = await axios.post("http://localhost:5001/login",{
       userType: currentUserType,
-      email: formData.loginEmail,
+      username: formData.loginEmail,
       password: formData.loginPassword
     });
-    alert(`${currentUserType.charAt(0).toUpperCase() + currentUserType.slice(1)} login attempted!\nEmail: ${formData.loginEmail}`);
+
+    console.log(res.data);
+    alert(res.data.message);
+    window.location.href="/homepage";
   };
 
-  const handleSignup = (e) => {
+  const handleSignup = async (e) => {
     e.preventDefault();
     
     if (formData.signupPassword !== formData.signupConfirmPassword) {
       alert('Passwords do not match!');
       return;
     }
-
-    console.log('Signup attempt:', {
+    const res = await axios.post("http://localhost:5001/signup",{
       userType: currentUserType,
       name: formData.signupName,
-      email: formData.signupEmail,
+      username: formData.signupEmail,
       password: formData.signupPassword
     });
-
-    alert(`${currentUserType.charAt(0).toUpperCase() + currentUserType.slice(1)} account created!\nName: ${formData.signupName}\nEmail: ${formData.signupEmail}`);
+    console.log(res);
+    alert(res.data.message);
+    window.location.href="/auth";
   };
 
   const handleGoogleSignIn = () => {
@@ -122,10 +126,9 @@ export default function QuintzAuth() {
             
             <div>
               <div style={styles.formGroup}>
-                <label style={styles.label} htmlFor="loginEmail">Email Address</label>
+                <label style={styles.label} htmlFor="loginEmail">Username</label>
                 <input 
                   style={styles.input}
-                  type="email" 
                   id="loginEmail"
                   name="loginEmail"
                   placeholder="Enter your email"
@@ -189,10 +192,9 @@ export default function QuintzAuth() {
               </div>
 
               <div style={styles.formGroup}>
-                <label style={styles.label} htmlFor="signupEmail">Email Address</label>
+                <label style={styles.label} htmlFor="signupEmail">Username</label>
                 <input 
                   style={styles.input}
-                  type="email" 
                   id="signupEmail"
                   name="signupEmail"
                   placeholder="Enter your email"
