@@ -40,7 +40,7 @@ export default function QuintzAuth() {
     localStorage.setItem("access", res.data.access_token);
     //localStorage.setItem("refresh", res.data.refresh_token);
     alert(res.data.message);
-    window.location.href="/profile";
+    window.location.href="/home";
   };
 
   const handleSignup = async (e) => {

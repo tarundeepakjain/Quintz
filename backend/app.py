@@ -83,7 +83,7 @@ def editProfile():
     currUser=get_jwt_identity()
     data = request.json
 
-    user = mongo.db.users.update_one({"username":data["username"]},{"$set":{"name":data["name"]}})
+    user = mongo.db.users.update_one({"username":currUser},{"$set":{"name":data["name"]}})
     if not user:
         return jsonify(message="User Not Found")
     return jsonify(message="Changes Updated Successfully.")
@@ -101,6 +101,37 @@ def changePass():
         user = mongo.db.users.update_one({"username":data["username"]},{"$set":{"password":hashed_password}})
         return jsonify(message="Password Changed Successfully.")
     return jsonify(message="Old Password is Wrong.")
+
+@app.route("/add-questions", methods=["POST"])
+@jwt_required()
+def addQuestion():
+    questions = []
+    data = request.get_json() or []
+    for ques in data:
+        doc = {
+            "askedIn": 1,
+            "type": ques.get("type"),
+            "text": ques.get("text"),
+            "options": ques.get("options") if ques.get("type") == "mcq" else []
+        }
+        if ques.get("type") == "mcq":
+            doc["correctIndex"] = ques.get("correctIndex")
+        else:
+            doc["correctInteger"] = ques.get("correctInteger")
+        res = mongo.db.questions.insert_one(doc)
+        questions.append(str(res.inserted_id))
+
+    return jsonify(message="Questions Added Successfully", questions=questions)
+
+@app.route("/create-quiz",methods=["POST"])
+@jwt_required()
+def createQuiz():
+    data=request.json
+    try:
+        res = mongo.db.quizzes.insert_one(data)
+        return jsonify(message="Quiz Created Successfully.")
+    except:
+        return jsonify(message="An Error Occured.")
 
 if __name__ == "__main__":
     app.run(port=5001,debug=True)
