@@ -123,7 +123,7 @@ export default function Profile() {
       <div style={styles.sidebar}>
         <div style={styles.sidebarHeader}>QUINTZ</div>
 
-        <button style={styles.sidebarBtn} onClick={()=>{window.location.href="/home"}}>Home</button>
+        <button style={styles.sidebarBtn} onClick={()=>{window.location.href="/"}}>Home</button>
         <button style={styles.sidebarBtn}>Past Quizzes</button>
         <button style={styles.sidebarBtn}>Performance</button>
 

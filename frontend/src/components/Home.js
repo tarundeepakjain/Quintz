@@ -191,16 +191,6 @@ export default function Home() {
 /* -------------------- STYLES -------------------- */
 
 const styles = {
-    quizCard: {
-    background: "white",
-    padding: "20px",
-    borderRadius: "14px",
-    border: "1px solid #e3d3ff",
-    boxShadow: "0 4px 15px rgba(0,0,0,0.08)",
-    transition: "0.25s",
-    position: "relative",
-    },
-
     quizCardHover: {
     transform: "translateY(-3px)",
     boxShadow: "0 8px 20px rgba(106,17,203,0.18)",
@@ -246,6 +236,9 @@ const styles = {
     overflow: "hidden"
   },
 
+  profileButton:{
+    cursor:"pointer",
+  },
   /* PROFILE DISPLAY */
   profileBox: {
     position: "absolute",
@@ -382,11 +375,6 @@ const styles = {
     fontSize: "20px",
     fontWeight: "700",
     color: "#6a11cb"
-  },
-
-  quizMetaItem: {
-    marginTop: "6px",
-    fontSize: "15px",
   },
 
   quizId: {

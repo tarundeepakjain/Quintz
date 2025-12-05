@@ -12,7 +12,10 @@ from flask_cors import CORS
 
 from werkzeug.security import generate_password_hash, check_password_hash
 
+from bson import ObjectId
+
 from datetime import timedelta
+
 load_dotenv()
 
 app = Flask(__name__)
@@ -25,6 +28,16 @@ app.config["MONGO_URI"] = os.environ.get("MONGO_URI")
 mongo = PyMongo(app)
 
 CORS(app)
+
+def removeQuestions(questions):
+    for q in questions:
+        qDB = mongo.db.questions
+        ques = qDB.find_one({"_id":ObjectId(q)})
+        ques["askedIn"]-=1
+        qDB.delete_one({"_id":ObjectId(q)})
+        if ques["askedIn"]>0:
+            qDB.insert_one(ques)
+
 @app.route("/signup", methods=["POST"])
 def register():
     statAdmin={"totalQuizzes": 0,"Total Participants": 0,"Avg Quizzes (per Year)":0,"MM Quiz made":0}
@@ -112,7 +125,9 @@ def addQuestion():
             "askedIn": 1,
             "type": ques.get("type"),
             "text": ques.get("text"),
-            "options": ques.get("options") if ques.get("type") == "mcq" else []
+            "options": ques.get("options") if ques.get("type") == "mcq" else [],
+            "subject":None,
+            "tag":None
         }
         if ques.get("type") == "mcq":
             doc["correctIndex"] = ques.get("correctIndex")
@@ -126,12 +141,99 @@ def addQuestion():
 @app.route("/create-quiz",methods=["POST"])
 @jwt_required()
 def createQuiz():
+    currUser=get_jwt_identity()
     data=request.json
     try:
+        #Admin Check
+        for admin in data["quizDetails"]["adminIds"]:
+            isPresent = mongo.db.users.find_one({"username":admin})
+            if not isPresent:
+                removeQuestions(data["questions"])
+                return jsonify(message="Admin Id's doesn't exist")
+        
+        if currUser not in data["quizDetails"]["adminIds"]:
+            data["quizDetails"]["adminIds"].append(currUser)
+
+        #Unique Quiz ID Check
+        isExist=mongo.db.quizzes.find_one({"quizDetails.quizId":data["quizDetails"]["quizId"]})
+        if isExist:
+            removeQuestions(data["questions"])
+            return jsonify(message="Quiz ID already exist.")
+
         res = mongo.db.quizzes.insert_one(data)
+        for admin in data["quizDetails"]["adminIds"]:
+            mongo.db.users.update_one({"username":admin},
+            {
+                "$inc":{"stats.totalQuizzes":1},
+                "$push":{"Quizzes":str(res.inserted_id)},
+                "$max":{"stats.MM Quiz made":data["quizDetails"]["totalMarks"]}
+            })
+        result={
+            "quizID":data["quizDetails"]["quizId"],
+            "score":dict(),
+            "userCorrectAnswers":dict()
+        }
+        mongo.db.quizResults.insert_one(result)
         return jsonify(message="Quiz Created Successfully.")
     except:
         return jsonify(message="An Error Occured.")
+
+@app.route('/quiz/<quizID>',methods=["GET"])
+@jwt_required()
+def quiz(quizID):
+    try:
+        qz = mongo.db.quizzes.find_one({"quizDetails.quizId":quizID})
+        if not qz:
+            return jsonify(message="Quiz Doesn't Exist")
+        ques = []
+        for q in qz["questions"]:
+            qu=mongo.db.questions.find_one({"_id":ObjectId(q)})
+            qu["_id"]=str(qu["_id"])
+            ques.append(qu)
+        return jsonify(message="Quiz Found",quizDetails=qz["quizDetails"],questions=ques)
+    except:
+        return jsonify(message="An Error Occured.")
+
+@app.route('/quiz/submit',methods=["POST"]) # With Quiz Results
+@jwt_required()
+def submitQuiz():
+    '''data=
+        {
+            quizID : ""
+            answers : {
+                "qId": marked Answer
+                .   Must return index of correct option or correctInteger
+                .
+                .
+            }
+        }
+    '''
+    currUser=get_jwt_identity()
+    data = request.json
+    quizID=data["quizID"]
+    correctAnswers=[] #currUser:correctAnswers -> push in userCorrectAnswers
+    for qId,ans in data["answers"].items():
+        ques = mongo.db.questions.find_one({"_id":ObjectId(qId)})
+        if ques["type"]=="mcq" and ques["correctIndex"]==ans:
+            correctAnswers.append(qId)
+        if ques["type"]=="integer" and ques["correctInteger"]==ans:
+            correctAnswers.append(qId)
+    quiz = mongo.db.quizzes.find_one({"quizDetails.quizId":quizID})
+    attemptedQuestions=len(data["answers"])
+    posMark = quiz["quizDetails"]["totalMarks"]/len(quiz["questions"])
+    negMark = quiz["quizDetails"]["negativeMarkPerQuestion"]
+    score = posMark*len(correctAnswers)-negMark*(attemptedQuestions-len(correctAnswers))
+    mongo.db.quizResults.update_one({"quizID":quizID},{
+        "$set":{
+            "score."+currUser:score,
+            "userCorrectAnswers."+currUser:correctAnswers
+        }
+    })
+    mongo.db.users.update_one({"username":currUser},{
+        "$inc":{"stats.totalQuizzes":1},
+        "$push":{"Quizzes":quizID}
+    })
+    return jsonify(message=currUser+" result added successfully.")
 
 if __name__ == "__main__":
     app.run(port=5001,debug=True)

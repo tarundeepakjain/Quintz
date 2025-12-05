@@ -11,7 +11,7 @@ function App() {
       <Routes>
         <Route path="/auth" element={<QuintzAuth/>} />
         <Route path="/profile" element={<Profile/>} />
-        <Route path="/home" element={<Home/>} />
+        <Route path="/" element={<Home/>} />
         <Route path="give-quiz/:quizID" element={<GiveQuiz/>} />
         <Route path="/create-quiz" element={<CreateQuiz/>} />
       </Routes>

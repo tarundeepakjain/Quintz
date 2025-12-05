@@ -13,6 +13,8 @@ export default function CreateQuiz() {
     adminIds: "",
     startDate: "",
     startTime: "",
+    resultDate:"",
+    resultTime:"",
     durationMinutes: 30,
     totalMarks: 100,
     negativeMarkPerQuestion: 0,
@@ -157,7 +159,38 @@ export default function CreateQuiz() {
       return;
     }
 
+    if(quizDetails.durationMinutes<=0){
+      alert("Invalid Quiz Duration.");
+      return;
+    }
+
     const startTimeISO = `${quizDetails.startDate}T${quizDetails.startTime}`;
+    const startTime = new Date(startTimeISO);
+    const resultTimeISO = `${quizDetails.resultDate}T${quizDetails.resultTime}`;
+    const resultTime = new Date(resultTimeISO);
+    const endTime = new Date(startTime.getTime() + quizDetails.durationMinutes * 60000);
+
+    const now = new Date();
+
+    // Validation: start time must be in the future
+    if (isNaN(startTime.getTime())) {
+      alert("Invalid date or time.");
+      return;
+    }
+
+    if (startTime <= now) {
+      alert("Start date and time must be in the future.");
+      return;
+    }
+    if (isNaN(resultTime.getTime())) {
+      alert("Invalid result date or time.");
+      return;
+    }
+
+    if (resultTime < endTime) {
+      alert("Result time must be AFTER quiz start time.");
+      return;
+    }
 
     const payload = {
       quizName: quizDetails.quizName,
@@ -169,6 +202,7 @@ export default function CreateQuiz() {
         .map((id) => id.trim())
         .filter(Boolean),
       startTime: startTimeISO, // ex: 2025-12-04T21:03
+      resultTime: resultTimeISO,
       durationMinutes: Number(quizDetails.durationMinutes),
       totalMarks: Number(quizDetails.totalMarks),
       negativeMarkPerQuestion: Number(quizDetails.negativeMarkPerQuestion),
@@ -199,7 +233,7 @@ export default function CreateQuiz() {
 
       alert(res.data.message);
       localStorage.removeItem("createQuizDraft");
-      window.location.href = "/home";
+      window.location.href = "/";
     } catch (err) {
       console.log(err);
       alert("Error creating quiz.");
@@ -215,12 +249,12 @@ export default function CreateQuiz() {
         <div style={styles.logo}>QUINTZ</div>
         <div style={styles.headerRight}>
           <span style={styles.headerText}>Create Quiz</span>
-          <div style={styles.profileBox}>
-            <div style={styles.profileAvatar}>
-              {user.name ? user.name[0].toUpperCase() : "U"}
+            <button style={styles.profileButton} onClick={() => window.location.href="/profile"}>
+            <div style={styles.profileBox}>
+                <div style={styles.profileAvatar}>{user.name ? user.name[0].toUpperCase() : "U"}</div>
+                <span style={styles.profileName}>{user.name}</span>
             </div>
-            <span style={styles.profileName}>{user.name}</span>
-          </div>
+            </button>
         </div>
       </div>
 
@@ -312,6 +346,30 @@ export default function CreateQuiz() {
 
             <div style={styles.inlineRow}>
               <div style={styles.inlineGroup}>
+                <label style={styles.label}>Result Date</label>
+                <input
+                  type="date"
+                  style={styles.input}
+                  name="resultDate"
+                  value={quizDetails.resultDate}
+                  onChange={handleDetailChange}
+                />
+              </div>
+
+              <div style={styles.inlineGroup}>
+                <label style={styles.label}>Result Time</label>
+                <input
+                  type="time"
+                  style={styles.input}
+                  name="resultTime"
+                  value={quizDetails.resultTime}
+                  onChange={handleDetailChange}
+                />
+              </div>
+            </div>
+
+            <div style={styles.inlineRow}>
+              <div style={styles.inlineGroup}>
                 <label style={styles.label}>Duration (min)</label>
                 <input
                   type="number"
@@ -353,7 +411,7 @@ export default function CreateQuiz() {
                   style={styles.input}
                   name="maxAttempts"
                   value={quizDetails.maxAttempts}
-                  onChange={handleDetailChange}
+                  readonly
                 />
               </div>
             </div>
@@ -480,6 +538,12 @@ export default function CreateQuiz() {
 /* -------------------- STYLES -------------------- */
 
 const styles = {
+  profileButton:{
+    cursor:"pointer",
+    padding:0,
+    margin:0,
+    border:0,
+  },
   page: {
     height: "100vh",
     width: "100%",
