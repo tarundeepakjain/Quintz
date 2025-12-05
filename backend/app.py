@@ -165,13 +165,11 @@ def createQuiz():
             mongo.db.users.update_one({"username":admin},
             {
                 "$inc":{"stats.totalQuizzes":1},
-                "$push":{"Quizzes":str(res.inserted_id)},
+                "$push":{"Quizzes":data["quizDetails"]["quizId"]},
                 "$max":{"stats.MM Quiz made":data["quizDetails"]["totalMarks"]}
             })
         result={
-            "quizID":data["quizDetails"]["quizId"],
-            "score":dict(),
-            "userCorrectAnswers":dict()
+            "quizID":data["quizDetails"]["quizId"]
         }
         mongo.db.quizResults.insert_one(result)
         return jsonify(message="Quiz Created Successfully.")
@@ -206,6 +204,7 @@ def submitQuiz():
                 .
                 .
             }
+            endTime:""
         }
     '''
     currUser=get_jwt_identity()
@@ -225,8 +224,9 @@ def submitQuiz():
     score = posMark*len(correctAnswers)-negMark*(attemptedQuestions-len(correctAnswers))
     mongo.db.quizResults.update_one({"quizID":quizID},{
         "$set":{
-            "score."+currUser:score,
-            "userCorrectAnswers."+currUser:correctAnswers
+            currUser+".score":score,
+            currUser+".userCorrectAnswers":correctAnswers,
+            currUser+".endTime":data["endTime"]
         }
     })
     mongo.db.users.update_one({"username":currUser},{
@@ -234,6 +234,21 @@ def submitQuiz():
         "$push":{"Quizzes":quizID}
     })
     return jsonify(message=currUser+" result added successfully.")
+
+@app.route('/quiz-results/<quizID>',methods=["GET"])
+@jwt_required()
+def results(quizID):
+    leaderboard=dict()
+    res = mongo.db.quizResults.find_one({"quizID":quizID})
+    result=dict()
+    for k,v in res.items():
+        if(k=="_id" or k=="quizID"): continue
+        result[k]=v
+    result=dict(sorted(
+    result.items(),
+    key=lambda x: (-x[1]["score"], x[1]["endTime"])
+    ))
+    return jsonify(result=result)
 
 if __name__ == "__main__":
     app.run(port=5001,debug=True)
