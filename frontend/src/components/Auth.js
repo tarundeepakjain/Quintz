@@ -1,5 +1,14 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import axios from 'axios';
+import { 
+  User, 
+  Mail, 
+  Lock, 
+  ArrowRight, 
+  CheckCircle,
+  Shield,
+  GraduationCap
+} from 'lucide-react';
 
 export default function QuintzAuth() {
   const [currentUserType, setCurrentUserType] = useState('student');
@@ -30,17 +39,22 @@ export default function QuintzAuth() {
 
   const handleLogin = async (e) => {
     e.preventDefault();
-    const res = await axios.post("http://localhost:5001/login",{
-      userType: currentUserType,
-      username: formData.loginEmail,
-      password: formData.loginPassword
-    });
+    try {
+      const res = await axios.post("http://localhost:5001/login", {
+        userType: currentUserType,
+        username: formData.loginEmail,
+        password: formData.loginPassword
+      });
 
-    console.log(res.data);
-    localStorage.setItem("access", res.data.access_token);
-    //localStorage.setItem("refresh", res.data.refresh_token);
-    alert(res.data.message);
-    window.location.href="/";
+      console.log(res.data);
+      localStorage.setItem("access", res.data.access_token);
+      alert(res.data.message);
+      // Use absolute path for reliability
+      window.location.href = `${window.location.origin}/`; 
+    } catch (err) {
+      console.error(err);
+      alert("Login failed. Please check your credentials.");
+    }
   };
 
   const handleSignup = async (e) => {
@@ -50,28 +64,28 @@ export default function QuintzAuth() {
       alert('Passwords do not match!');
       return;
     }
-    const res = await axios.post("http://localhost:5001/signup",{
-      userType: currentUserType,
-      name: formData.signupName,
-      username: formData.signupEmail,
-      password: formData.signupPassword
-    });
-    console.log(res);
-    alert(res.data.message);
-    window.location.href="/auth";
+    try {
+      const res = await axios.post("http://localhost:5001/signup", {
+        userType: currentUserType,
+        name: formData.signupName,
+        username: formData.signupEmail,
+        password: formData.signupPassword
+      });
+      console.log(res);
+      alert(res.data.message);
+      window.location.href = `${window.location.origin}/auth`;
+    } catch (err) {
+      console.error(err);
+      alert("Signup failed. Please try again.");
+    }
   };
 
   const handleGoogleSignIn = () => {
-    console.log('Google Sign-In attempt:', {
-      userType: currentUserType,
-      action: currentForm
-    });
-
     alert(`Google Sign-In for ${currentUserType.charAt(0).toUpperCase() + currentUserType.slice(1)}\n\nIn production, this would redirect to Google OAuth.`);
   };
 
   const GoogleIcon = () => (
-    <svg style={{width: '20px', height: '20px'}} viewBox="0 0 24 24">
+    <svg className="google-icon" viewBox="0 0 24 24">
       <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
       <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
       <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
@@ -80,173 +94,158 @@ export default function QuintzAuth() {
   );
 
   return (
-    <div style={styles.authBody}>
-      <div style={styles.container}>
-        <div style={styles.header}>
-          <div style={styles.headerContent}>
-            <div style={styles.logo}>QUINTZ</div>
-            <div style={styles.tagline}>Your Learning Platform</div>
-            <div style={styles.userTypeBadge}>
-              <span style={styles.badgeIcon}>{currentUserType === 'student' ? '👨‍🎓' : '👨‍💼'}</span>
-              <span>{currentUserType === 'student' ? 'Student Portal' : 'Admin Portal'}</span>
-            </div>
+    <div className="auth-page">
+      <style>{css}</style>
+      
+      {/* Decorative Background Elements */}
+      <div className="bg-circle-1"></div>
+      <div className="bg-circle-2"></div>
+
+      <div className="auth-card animate-fadeIn">
+        
+        {/* Header Section */}
+        <div className="auth-header">
+          <div className="logo-section">
+            <div className="logo-icon">Q</div>
+            <h1 className="logo-text">QUINTZ</h1>
+          </div>
+          <p className="auth-subtitle">Your Ultimate Learning Platform</p>
+          
+          {/* User Type Toggle */}
+          <div className="toggle-wrapper">
+            <div 
+              className="toggle-slider" 
+              style={{ transform: currentUserType === 'admin' ? 'translateX(100%)' : 'translateX(0)' }}
+            />
+            <button 
+              className={`toggle-btn ${currentUserType === 'student' ? 'active' : ''}`}
+              onClick={() => switchUserType('student')}
+            >
+              <GraduationCap size={16} /> Student
+            </button>
+            <button 
+              className={`toggle-btn ${currentUserType === 'admin' ? 'active' : ''}`}
+              onClick={() => switchUserType('admin')}
+            >
+              <Shield size={16} /> Admin
+            </button>
           </div>
         </div>
 
-        <div style={styles.toggleContainer}>
-          <div style={{
-            ...styles.toggleSlider,
-            transform: currentUserType === 'admin' ? 'translateX(100%)' : 'translateX(0)'
-          }}></div>
-          <button 
-            style={{
-              ...styles.toggleBtn,
-              color: currentUserType === 'student' ? 'white' : '#666'
-            }}
-            onClick={() => switchUserType('student')}
-          >
-            Student
-          </button>
-          <button 
-            style={{
-              ...styles.toggleBtn,
-              color: currentUserType === 'admin' ? 'white' : '#666'
-            }}
-            onClick={() => switchUserType('admin')}
-          >
-            Admin
-          </button>
-        </div>
-
-        {/* Login Form */}
-        <div style={{
-          ...styles.formSection,
-          display: currentForm === 'login' ? 'block' : 'none'
-        }}>
-          <div style={styles.formContainer}>
-            <h2 style={styles.formTitle}>Welcome Back</h2>
-            
-            <div>
-              <div style={styles.formGroup}>
-                <label style={styles.label} htmlFor="loginEmail">Username</label>
+        {/* Form Container */}
+        <div className="auth-body">
+          <h2 className="form-title">
+            {currentForm === 'login' ? 'Welcome Back!' : 'Create Account'}
+          </h2>
+          
+          {/* Login Form */}
+          {currentForm === 'login' && (
+            <div className="form-content animate-slideUp">
+              <div className="input-group">
+                <div className="input-icon"><User size={18} /></div>
                 <input 
-                  style={styles.input}
                   id="loginEmail"
                   name="loginEmail"
-                  placeholder="Enter your email"
+                  placeholder="Username"
                   value={formData.loginEmail}
                   onChange={handleInputChange}
                   required 
                 />
               </div>
 
-              <div style={styles.formGroup}>
-                <label style={styles.label} htmlFor="loginPassword">Password</label>
+              <div className="input-group">
+                <div className="input-icon"><Lock size={18} /></div>
                 <input 
-                  style={styles.input}
                   type="password" 
                   id="loginPassword"
                   name="loginPassword"
-                  placeholder="Enter your password"
+                  placeholder="Password"
                   value={formData.loginPassword}
                   onChange={handleInputChange}
                   required 
                 />
               </div>
 
-              <button style={styles.submitBtn} onClick={handleLogin}>Sign In</button>
+              <button className="submit-btn" onClick={handleLogin}>
+                Sign In <ArrowRight size={18} />
+              </button>
             </div>
+          )}
 
-            <div style={styles.divider}>OR</div>
-
-            <button style={styles.googleBtn} onClick={handleGoogleSignIn}>
-              <GoogleIcon />
-              Sign in with Google
-            </button>
-
-            <div style={styles.switchForm}>
-              Don't have an account? <a style={styles.link} onClick={() => switchForm('signup')}>Sign Up</a>
-            </div>
-          </div>
-        </div>
-
-        {/* Signup Form */}
-        <div style={{
-          ...styles.formSection,
-          display: currentForm === 'signup' ? 'block' : 'none'
-        }}>
-          <div style={styles.formContainer}>
-            <h2 style={styles.formTitle}>Create Account</h2>
-            
-            <div>
-              <div style={styles.formGroup}>
-                <label style={styles.label} htmlFor="signupName">Full Name</label>
+          {/* Signup Form */}
+          {currentForm === 'signup' && (
+            <div className="form-content animate-slideUp">
+              <div className="input-group">
+                <div className="input-icon"><User size={18} /></div>
                 <input 
-                  style={styles.input}
                   type="text" 
                   id="signupName"
                   name="signupName"
-                  placeholder="Enter your full name"
+                  placeholder="Full Name"
                   value={formData.signupName}
                   onChange={handleInputChange}
                   required 
                 />
               </div>
 
-              <div style={styles.formGroup}>
-                <label style={styles.label} htmlFor="signupEmail">Username</label>
+              <div className="input-group">
+                <div className="input-icon"><Mail size={18} /></div>
                 <input 
-                  style={styles.input}
                   id="signupEmail"
                   name="signupEmail"
-                  placeholder="Enter your email"
+                  placeholder="Username"
                   value={formData.signupEmail}
                   onChange={handleInputChange}
                   required 
                 />
               </div>
 
-              <div style={styles.formGroup}>
-                <label style={styles.label} htmlFor="signupPassword">Password</label>
+              <div className="input-group">
+                <div className="input-icon"><Lock size={18} /></div>
                 <input 
-                  style={styles.input}
                   type="password" 
                   id="signupPassword"
                   name="signupPassword"
-                  placeholder="Create a password"
+                  placeholder="Create Password"
                   value={formData.signupPassword}
                   onChange={handleInputChange}
                   required 
                 />
               </div>
 
-              <div style={styles.formGroup}>
-                <label style={styles.label} htmlFor="signupConfirmPassword">Confirm Password</label>
+              <div className="input-group">
+                <div className="input-icon"><CheckCircle size={18} /></div>
                 <input 
-                  style={styles.input}
                   type="password" 
                   id="signupConfirmPassword"
                   name="signupConfirmPassword"
-                  placeholder="Confirm your password"
+                  placeholder="Confirm Password"
                   value={formData.signupConfirmPassword}
                   onChange={handleInputChange}
                   required 
                 />
               </div>
 
-              <button style={styles.submitBtn} onClick={handleSignup}>Create Account</button>
+              <button className="submit-btn" onClick={handleSignup}>
+                Create Account <ArrowRight size={18} />
+              </button>
             </div>
+          )}
 
-            <div style={styles.divider}>OR</div>
+          <div className="divider">
+            <span>OR</span>
+          </div>
 
-            <button style={styles.googleBtn} onClick={handleGoogleSignIn}>
-              <GoogleIcon />
-              Sign up with Google
+          <button className="google-btn" onClick={handleGoogleSignIn}>
+            <GoogleIcon />
+            <span>Continue with Google</span>
+          </button>
+
+          <div className="switch-text">
+            {currentForm === 'login' ? "Don't have an account?" : "Already have an account?"}
+            <button className="link-btn" onClick={() => switchForm(currentForm === 'login' ? 'signup' : 'login')}>
+              {currentForm === 'login' ? 'Sign Up' : 'Sign In'}
             </button>
-
-            <div style={styles.switchForm}>
-              Already have an account? <a style={styles.link} onClick={() => switchForm('login')}>Sign In</a>
-            </div>
           </div>
         </div>
       </div>
@@ -254,195 +253,305 @@ export default function QuintzAuth() {
   );
 }
 
-const styles = {
-  authBody: {
-    fontFamily: "'Poppins', sans-serif",
-    backgroundImage : "url('/loginBg.png')",
-    height: "100vh",
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 0,
-    margin: 0,
-  },
+const css = `
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap');
 
-  container: {
-    background: "white",
-    borderRadius: "20px",
-    boxShadow: "0 12px 45px rgba(0,0,0,0.18)",
-    overflow: "hidden",
-    width: "100%",
-    maxWidth: "450px",
-    height: "90vh",
-    display: "flex",
-    flexDirection: "column",
-  },
+.auth-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #f7f3ff, #efe8ff);
+  font-family: 'Poppins', sans-serif;
+  position: relative;
+  overflow: hidden;
+  padding: 20px;
+}
 
-  header: {
-    background: "linear-gradient(135deg, #6a11cb 0%, #8e63ff 100%)",
-    padding: "40px 20px",
-    textAlign: "center",
-    color: "white",
-  },
+.bg-circle-1 {
+  position: absolute;
+  top: -100px;
+  left: -100px;
+  width: 500px;
+  height: 500px;
+  background: rgba(106, 17, 203, 0.08);
+  border-radius: 50%;
+  filter: blur(80px);
+  pointer-events: none;
+  animation: float 15s ease-in-out infinite;
+}
 
-  headerContent: {
-    position: "relative",
-    zIndex: 1,
-  },
+.bg-circle-2 {
+  position: absolute;
+  bottom: -150px;
+  right: -150px;
+  width: 600px;
+  height: 600px;
+  background: rgba(37, 117, 252, 0.08);
+  border-radius: 50%;
+  filter: blur(100px);
+  pointer-events: none;
+  animation: float 20s ease-in-out infinite reverse;
+}
 
-  logo: {
-    fontSize: "38px",
-    fontWeight: "800",
-    letterSpacing: "3px",
-    marginBottom: "6px",
-  },
+@keyframes float {
+  0%, 100% { transform: translate(0, 0); }
+  50% { transform: translate(30px, 30px); }
+}
 
-  tagline: {
-    fontSize: "14px",
-    opacity: 0.9,
-    marginBottom: "12px",
-  },
+.auth-card {
+  width: 100%;
+  max-width: 420px;
+  background: white;
+  border-radius: 24px;
+  box-shadow: 0 20px 60px rgba(106, 17, 203, 0.12);
+  overflow: hidden;
+  position: relative;
+  z-index: 10;
+  border: 1px solid rgba(255, 255, 255, 0.8);
+}
 
-  userTypeBadge: {
-    display: "inline-flex",
-    gap: "8px",
-    alignItems: "center",
-    padding: "6px 18px",
-    background: "rgba(255,255,255,0.25)",
-    borderRadius: "20px",
-    fontSize: "13px",
-    fontWeight: "600",
-  },
+.auth-header {
+  background: linear-gradient(135deg, #6a11cb, #2575fc);
+  padding: 40px 30px 30px;
+  text-align: center;
+  color: white;
+  border-bottom-left-radius: 30px;
+  border-bottom-right-radius: 30px;
+  position: relative;
+}
 
-  badgeIcon: {
-    width: "18px",
-    height: "18px",
-    background: "white",
-    borderRadius: "50%",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    fontSize: "10px",
-  },
+.logo-section {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
 
-  toggleContainer: {
-    display: "flex",
-    background: "#f0e8ff",
-    borderRadius: "25px",
-    padding: "4px",
-    margin: "18px 40px",
-    position: "relative",
-  },
+.logo-icon {
+  width: 40px;
+  height: 40px;
+  background: white;
+  color: #6a11cb;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  font-weight: 800;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
 
-  toggleBtn: {
-    flex: 1,
-    padding: "12px",
-    border: "none",
-    background: "transparent",
-    fontSize: "14px",
-    fontWeight: "600",
-    cursor: "pointer",
-    zIndex: 2,
-  },
+.logo-text {
+  font-size: 32px;
+  font-weight: 800;
+  letter-spacing: -1px;
+  margin: 0;
+}
 
-  toggleSlider: {
-    position: "absolute",
-    top: "4px",
-    left: "4px",
-    width: "50%",
-    height: "calc(100% - 8px)",
-    background: "linear-gradient(135deg, #6a11cb 0%, #8e63ff 100%)",
-    borderRadius: "20px",
-    transition: "transform 0.3s ease",
-  },
+.auth-subtitle {
+  font-size: 14px;
+  opacity: 0.9;
+  margin-bottom: 25px;
+  font-weight: 500;
+}
 
-  formSection: {
-    flex: 1,
-    overflowY: "auto",
-    paddingBottom: "10px",
-  },
+/* Toggle Switch */
+.toggle-wrapper {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 30px;
+  padding: 4px;
+  display: flex;
+  position: relative;
+  backdrop-filter: blur(5px);
+  margin: 0 auto;
+  max-width: 240px;
+}
 
-  formContainer: {
-    padding: "25px 30px",
-  },
+.toggle-slider {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  width: calc(50% - 4px);
+  height: calc(100% - 8px);
+  background: white;
+  border-radius: 25px;
+  transition: transform 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
 
-  formTitle: {
-    marginBottom: "20px",
-    color: "#333",
-    fontSize: "22px",
-    fontWeight: "700",
-  },
+.toggle-btn {
+  flex: 1;
+  border: none;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.8);
+  padding: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  z-index: 2;
+  transition: color 0.3s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
 
-  formGroup: {
-    marginBottom: "18px",
-  },
+.toggle-btn.active {
+  color: #6a11cb;
+}
 
-  label: {
-    display: "block",
-    marginBottom: "6px",
-    color: "#444",
-    fontWeight: "600",
-    fontSize: "14px",
-  },
+.auth-body {
+  padding: 30px;
+}
 
-  input: {
-    width: "100%",
-    padding: "12px",
-    border: "2px solid #e4d7ff",
-    borderRadius: "10px",
-    fontSize: "14px",
-    transition: "0.2s",
-  },
+.form-title {
+  text-align: center;
+  font-size: 22px;
+  font-weight: 700;
+  color: #333;
+  margin: 0 0 25px 0;
+}
 
-  submitBtn: {
-    width: "100%",
-    padding: "12px",
-    background: "linear-gradient(135deg, #6a11cb 0%, #8e63ff 100%)",
-    color: "white",
-    border: "none",
-    borderRadius: "10px",
-    fontSize: "16px",
-    fontWeight: "600",
-    cursor: "pointer",
-    marginTop: "8px",
-    boxShadow: "0 6px 18px rgba(106, 17, 203, 0.4)",
-    transition: "0.2s",
-  },
+.input-group {
+  position: relative;
+  margin-bottom: 16px;
+}
 
-  divider: {
-    textAlign: "center",
-    margin: "22px 0 15px",
-    color: "#888",
-    fontSize: "13px",
-  },
+.input-icon {
+  position: absolute;
+  left: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #a0aec0;
+  display: flex;
+}
 
-  googleBtn: {
-    width: "100%",
-    padding: "12px",
-    background: "white",
-    border: "2px solid #e4d7ff",
-    borderRadius: "10px",
-    fontSize: "15px",
-    fontWeight: "600",
-    cursor: "pointer",
-    display: "flex",
-    gap: "10px",
-    alignItems: "center",
-    justifyContent: "center",
-    transition: "0.2s",
-  },
+.input-group input {
+  width: 100%;
+  padding: 14px 16px 14px 48px;
+  border-radius: 14px;
+  border: 2px solid #f0f0f0;
+  background: #fafafa;
+  font-size: 14px;
+  font-family: 'Poppins', sans-serif;
+  color: #333;
+  transition: all 0.2s;
+  box-sizing: border-box;
+}
 
-  switchForm: {
-    marginTop: "15px",
-    textAlign: "center",
-    fontSize: "14px",
-    color: "#666",
-  },
+.input-group input:focus {
+  outline: none;
+  border-color: #6a11cb;
+  background: white;
+  box-shadow: 0 0 0 4px rgba(106, 17, 203, 0.05);
+}
 
-  link: {
-    color: "#6a11cb",
-    fontWeight: "700",
-    cursor: "pointer",
-  },
-};
+.submit-btn {
+  width: 100%;
+  padding: 14px;
+  background: linear-gradient(135deg, #6a11cb, #2575fc);
+  color: white;
+  border: none;
+  border-radius: 14px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 10px;
+  transition: transform 0.2s, box-shadow 0.2s;
+  box-shadow: 0 8px 20px rgba(106, 17, 203, 0.25);
+}
 
+.submit-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 25px rgba(106, 17, 203, 0.35);
+}
+
+.divider {
+  display: flex;
+  align-items: center;
+  text-align: center;
+  margin: 25px 0;
+  color: #a0aec0;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.divider::before, .divider::after {
+  content: '';
+  flex: 1;
+  border-bottom: 1px solid #edf2f7;
+}
+
+.divider span {
+  padding: 0 10px;
+}
+
+.google-btn {
+  width: 100%;
+  padding: 12px;
+  background: white;
+  border: 2px solid #edf2f7;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  cursor: pointer;
+  font-family: 'Poppins', sans-serif;
+  font-weight: 600;
+  font-size: 14px;
+  color: #4a5568;
+  transition: all 0.2s;
+}
+
+.google-btn:hover {
+  background: #f8fafc;
+  border-color: #cbd5e0;
+}
+
+.google-icon {
+  width: 20px;
+  height: 20px;
+}
+
+.switch-text {
+  text-align: center;
+  margin-top: 25px;
+  font-size: 14px;
+  color: #666;
+}
+
+.link-btn {
+  background: none;
+  border: none;
+  color: #6a11cb;
+  font-weight: 700;
+  cursor: pointer;
+  margin-left: 5px;
+  padding: 0;
+  font-family: 'Poppins', sans-serif;
+}
+
+.link-btn:hover {
+  text-decoration: underline;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+.animate-fadeIn { animation: fadeIn 0.4s ease-out forwards; }
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-slideUp { animation: slideUp 0.3s ease-out forwards; }
+`;

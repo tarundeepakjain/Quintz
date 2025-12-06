@@ -14,7 +14,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 
 from bson import ObjectId
 
-from datetime import timedelta
+from datetime import timedelta,datetime
 
 load_dotenv()
 
@@ -179,10 +179,14 @@ def createQuiz():
 @app.route('/quiz/<quizID>',methods=["GET"])
 @jwt_required()
 def quiz(quizID):
+    currUser=get_jwt_identity()
     try:
         qz = mongo.db.quizzes.find_one({"quizDetails.quizId":quizID})
         if not qz:
             return jsonify(message="Quiz Doesn't Exist")
+        qzR = mongo.db.quizResults.find_one({"quizID":quizID})
+        if currUser in qzR:
+            return jsonify(message="Already Given")
         ques = []
         for q in qz["questions"]:
             qu=mongo.db.questions.find_one({"_id":ObjectId(q)})
@@ -248,7 +252,48 @@ def results(quizID):
     result.items(),
     key=lambda x: (-x[1]["score"], x[1]["endTime"])
     ))
-    return jsonify(result=result)
+    return jsonify(result)
+
+@app.route('/get-public-quizzes',methods=["GET"])
+@jwt_required()
+def getPublicQuizzes():
+    quizzes=[]
+    res = mongo.db.quizzes.find({"quizDetails.visibility":"public"})
+    for qz in res:
+        startTime=datetime.strptime(qz["quizDetails"]["startTime"],'%Y-%m-%dT%H:%M')
+        endTime=startTime+timedelta(minutes=qz["quizDetails"]["durationMinutes"])
+        now=datetime.now()
+        if now<=endTime:
+            quizzes.append({
+                "title": qz["quizDetails"]["quizName"],
+                "startTime": qz["quizDetails"]["startTime"],
+                "duration": qz["quizDetails"]["durationMinutes"], 
+                "id": qz["quizDetails"]["quizId"]
+            })
+    return quizzes
+
+@app.route('/past-quizzes',methods=["GET"])
+@jwt_required()
+def pastQuizzes():
+    currUser=get_jwt_identity()
+    quizzes=[]
+    res = mongo.db.users.find_one({"username":currUser})
+    for qID in res["Quizzes"]:
+        qz = mongo.db.quizzes.find_one({"quizDetails.quizId":qID})
+        if not qz: continue
+        startTime=datetime.strptime(qz["quizDetails"]["startTime"],'%Y-%m-%dT%H:%M')
+        endTime=startTime+timedelta(minutes=qz["quizDetails"]["durationMinutes"])
+        now=datetime.now()
+        #print(qz)
+        if now>endTime:
+            quizzes.append({
+                "title": qz["quizDetails"]["quizName"],
+                "startTime": qz["quizDetails"]["startTime"],
+                "duration": qz["quizDetails"]["durationMinutes"],
+                "resultTime":qz["quizDetails"]["resultTime"], 
+                "id": qz["quizDetails"]["quizId"]
+            })
+    return quizzes
 
 if __name__ == "__main__":
     app.run(port=5001,debug=True)

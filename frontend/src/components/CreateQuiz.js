@@ -1,7 +1,27 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
+import { 
+  Home, 
+  Clock, 
+  BarChart2, 
+  User, 
+  LogOut, 
+  Menu, 
+  X, 
+  Plus, 
+  Trash2, 
+  Save, 
+  Settings, 
+  FileText,
+  Calendar,
+  Layers,
+  CheckSquare
+} from "lucide-react";
 
 export default function CreateQuiz() {
+  // ---------------------------------------------------------------------------
+  // EXISTING STATE & LOGIC (Preserved)
+  // ---------------------------------------------------------------------------
   const [user, setUser] = useState(null);
   const [loadingUser, setLoadingUser] = useState(true);
 
@@ -24,13 +44,16 @@ export default function CreateQuiz() {
 
   const [questions, setQuestions] = useState([]);
 
+  // UI State for Sidebar (Mobile only)
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
   // ---------- Load user & draft from localStorage ----------
   useEffect(() => {
     const init = async () => {
       try {
         const token = localStorage.getItem("access");
         if (!token) {
-          window.location.href = "/auth";
+          window.location.href = `${window.location.origin}/auth`;
           return;
         }
 
@@ -40,13 +63,12 @@ export default function CreateQuiz() {
 
         if (!res.data.user || res.data.user.userType !== "admin") {
           alert("Only admins can access Create Quiz.");
-          window.location.href = "/auth";
+          window.location.href = `${window.location.origin}/auth`;
           return;
         }
 
         setUser(res.data.user);
 
-        // Load draft if exists
         const draft = localStorage.getItem("createQuizDraft");
         if (draft) {
           const parsed = JSON.parse(draft);
@@ -55,7 +77,7 @@ export default function CreateQuiz() {
         }
       } catch (err) {
         console.log(err);
-        window.location.href = "/auth";
+        window.location.href = `${window.location.origin}/auth`;
       } finally {
         setLoadingUser(false);
       }
@@ -64,21 +86,14 @@ export default function CreateQuiz() {
     init();
   }, []);
 
-  // ---------- Save draft to localStorage whenever things change ----------
   useEffect(() => {
-    const draft = {
-      quizDetails,
-      questions,
-    };
+    const draft = { quizDetails, questions };
     localStorage.setItem("createQuizDraft", JSON.stringify(draft));
   }, [quizDetails, questions]);
 
   const handleDetailChange = (e) => {
     const { name, value } = e.target;
-    setQuizDetails((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    setQuizDetails((prev) => ({ ...prev, [name]: value }));
   };
 
   const addQuestion = () => {
@@ -104,14 +119,12 @@ export default function CreateQuiz() {
   const handleQuestionTypeChange = (index, value) => {
     const updated = [...questions];
     updated[index].type = value;
-
     if (value === "mcq") {
       updated[index].options = updated[index].options || ["", "", "", ""];
       updated[index].correctIndex = 0;
     } else if (value === "integer") {
       updated[index].correctInteger = "";
     }
-
     setQuestions(updated);
   };
 
@@ -136,7 +149,6 @@ export default function CreateQuiz() {
   const removeQuestion = (index) => {
     const updated = [...questions];
     updated.splice(index, 1);
-    // re-number ids
     updated.forEach((q, i) => (q.id = i + 1));
     setQuestions(updated);
   };
@@ -148,17 +160,14 @@ export default function CreateQuiz() {
       alert("Quiz Name and Quiz ID are required.");
       return;
     }
-
     if (!quizDetails.startDate || !quizDetails.startTime) {
       alert("Please select Start Date and Time.");
       return;
     }
-
     if (questions.length === 0) {
       alert("Add at least one question.");
       return;
     }
-
     if(quizDetails.durationMinutes<=0){
       alert("Invalid Quiz Duration.");
       return;
@@ -169,39 +178,20 @@ export default function CreateQuiz() {
     const resultTimeISO = `${quizDetails.resultDate}T${quizDetails.resultTime}`;
     const resultTime = new Date(resultTimeISO);
     const endTime = new Date(startTime.getTime() + quizDetails.durationMinutes * 60000);
-
     const now = new Date();
 
-    // Validation: start time must be in the future
-    if (isNaN(startTime.getTime())) {
-      alert("Invalid date or time.");
-      return;
-    }
-
-    if (startTime <= now) {
-      alert("Start date and time must be in the future.");
-      return;
-    }
-    if (isNaN(resultTime.getTime())) {
-      alert("Invalid result date or time.");
-      return;
-    }
-
-    if (resultTime < endTime) {
-      alert("Result time must be AFTER quiz start time.");
-      return;
-    }
+    if (isNaN(startTime.getTime())) { alert("Invalid date or time."); return; }
+    if (startTime <= now) { alert("Start date and time must be in the future."); return; }
+    if (isNaN(resultTime.getTime())) { alert("Invalid result date or time."); return; }
+    if (resultTime < endTime) { alert("Result time must be AFTER quiz start time."); return; }
 
     const payload = {
       quizName: quizDetails.quizName,
       quizId: quizDetails.quizId,
       subject: quizDetails.subject,
       description: quizDetails.description,
-      adminIds: quizDetails.adminIds
-        .split(",")
-        .map((id) => id.trim())
-        .filter(Boolean),
-      startTime: startTimeISO, // ex: 2025-12-04T21:03
+      adminIds: quizDetails.adminIds.split(",").map((id) => id.trim()).filter(Boolean),
+      startTime: startTimeISO, 
       resultTime: resultTimeISO,
       durationMinutes: Number(quizDetails.durationMinutes),
       totalMarks: Number(quizDetails.totalMarks),
@@ -212,576 +202,437 @@ export default function CreateQuiz() {
 
     try {
       const token = localStorage.getItem("access");
-
-      const qidRaw = await axios.post("http://localhost:5001/add-questions",
-        questions,
-        {
-            headers:{Authorization : "Bearer "+token},
-        }
-      );
-
-      const res = await axios.post(
-        "http://localhost:5001/create-quiz",
-        {
-            quizDetails:payload,
-            questions:qidRaw.data.questions,
-        },
-        {
-          headers: { Authorization: "Bearer " + token },
-        }
-      );
+      const qidRaw = await axios.post("http://localhost:5001/add-questions", questions, {
+          headers:{Authorization : "Bearer "+token},
+      });
+      const res = await axios.post("http://localhost:5001/create-quiz", {
+          quizDetails:payload,
+          questions:qidRaw.data.questions,
+      }, {
+        headers: { Authorization: "Bearer " + token },
+      });
 
       alert(res.data.message);
       localStorage.removeItem("createQuizDraft");
-      window.location.href = "/";
+      window.location.href = `${window.location.origin}/`;
     } catch (err) {
       console.log(err);
       alert("Error creating quiz.");
     }
   };
 
-  if (loadingUser) return <div style={{ padding: 20 }}>Loading...</div>;
+  const logout = () => {
+    localStorage.removeItem("access");
+    window.location.href = `${window.location.origin}/auth`;
+  };
 
+  if (loadingUser) return (
+    <div className="loading-state">
+      <style>{css}</style>
+      <div className="spinner"></div>
+      <p>Verifying Admin Access...</p>
+    </div>
+  );
+
+  // ---------------------------------------------------------------------------
+  // UI STRUCTURE
+  // ---------------------------------------------------------------------------
   return (
-    <div style={styles.page}>
-      {/* HEADER */}
-      <div style={styles.header}>
-        <div style={styles.logo}>QUINTZ</div>
-        <div style={styles.headerRight}>
-          <span style={styles.headerText}>Create Quiz</span>
-            <button style={styles.profileButton} onClick={() => window.location.href="/profile"}>
-            <div style={styles.profileBox}>
-                <div style={styles.profileAvatar}>{user.name ? user.name[0].toUpperCase() : "U"}</div>
-                <span style={styles.profileName}>{user.name}</span>
-            </div>
-            </button>
+    <div className="page">
+      <style>{css}</style>
+
+      {/* Mobile Toggle */}
+      <button className="mobile-menu-btn" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
+        {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+      </button>
+
+      {/* Sidebar Navigation */}
+      <div className={`sidebar ${mobileMenuOpen ? 'mobile-open' : ''}`}>
+        <div className="sidebar-header">
+          {/* Logo switches based on CSS (Desktop vs Mobile) */}
+          <div className="logo-desktop">Q</div>
+          <span className="logo-mobile">QUINTZ</span>
         </div>
+
+        <nav className="sidebar-nav">
+          <button className="nav-btn tooltip-container" onClick={() => window.location.href = `${window.location.origin}/`}>
+            <span><Home size={22} /></span> 
+            <span className="nav-text">Home</span>
+            <span className="tooltip">Home</span>
+          </button>
+          <button className="nav-btn tooltip-container" onClick={() => window.location.href = `${window.location.origin}/past-quizzes`}>
+            <span><Clock size={22} /></span>
+            <span className="nav-text">Past Quizzes</span>
+            <span className="tooltip">Past Quizzes</span>
+          </button>
+          <button className="nav-btn tooltip-container" onClick={() => window.location.href = `${window.location.origin}/profile`}>
+            <span><User size={22} /></span>
+            <span className="nav-text">Profile</span>
+            <span className="tooltip">Profile</span>
+          </button>
+          <button className="nav-btn tooltip-container">
+            <span><BarChart2 size={22} /></span>
+            <span className="nav-text">Performance</span>
+            <span className="tooltip">Performance</span>
+          </button>
+        </nav>
+
+        <button className="logout-btn tooltip-container" onClick={logout}>
+          <span><LogOut size={20} /></span>
+          <span className="nav-text">Logout</span>
+          <span className="tooltip">Logout</span>
+        </button>
       </div>
 
-      {/* MAIN CONTENT */}
-      <div style={styles.content}>
-        {/* LEFT: QUIZ META FORM */}
-        <div style={styles.leftPanel}>
-          <h2 style={styles.sectionTitle}>Quiz Details</h2>
+      {mobileMenuOpen && <div className="overlay" onClick={() => setMobileMenuOpen(false)}></div>}
 
-          <form onSubmit={handleSubmit}>
-            <div style={styles.formGroup}>
-              <label style={styles.label}>Quiz Name</label>
-              <input
-                style={styles.input}
-                name="quizName"
-                value={quizDetails.quizName}
-                onChange={handleDetailChange}
-                placeholder="e.g. Physics Chapter 1 Test"
-              />
+      {/* Main Content Area */}
+      <div className="main">
+        <div className="bg-circle-1"></div>
+        <div className="bg-circle-2"></div>
+
+        <div className="main-content-wrapper">
+          <header className="page-header">
+            <div className="header-left">
+              <h1>Create New Quiz</h1>
+              <p>Configure quiz settings and add questions below.</p>
             </div>
-
-            <div style={styles.formGroup}>
-              <label style={styles.label}>Quiz ID</label>
-              <input
-                style={styles.input}
-                name="quizId"
-                value={quizDetails.quizId}
-                onChange={handleDetailChange}
-                placeholder="Unique quiz code"
-              />
-            </div>
-
-            <div style={styles.formGroup}>
-              <label style={styles.label}>Subject</label>
-              <input
-                style={styles.input}
-                name="subject"
-                value={quizDetails.subject}
-                onChange={handleDetailChange}
-                placeholder="e.g. Physics"
-              />
-            </div>
-
-            <div style={styles.formGroup}>
-              <label style={styles.label}>Description</label>
-              <textarea
-                style={{ ...styles.input, height: "70px", resize: "none" }}
-                name="description"
-                value={quizDetails.description}
-                onChange={handleDetailChange}
-                placeholder="Short description of the quiz"
-              />
-            </div>
-
-            <div style={styles.formGroup}>
-              <label style={styles.label}>Admin Usernames (comma separated)</label>
-              <input
-                style={styles.input}
-                name="adminIds"
-                value={quizDetails.adminIds}
-                onChange={handleDetailChange}
-                placeholder="admin1, admin2"
-              />
-            </div>
-
-            <div style={styles.inlineRow}>
-              <div style={styles.inlineGroup}>
-                <label style={styles.label}>Start Date</label>
-                <input
-                  type="date"
-                  style={styles.input}
-                  name="startDate"
-                  value={quizDetails.startDate}
-                  onChange={handleDetailChange}
-                />
-              </div>
-
-              <div style={styles.inlineGroup}>
-                <label style={styles.label}>Start Time</label>
-                <input
-                  type="time"
-                  style={styles.input}
-                  name="startTime"
-                  value={quizDetails.startTime}
-                  onChange={handleDetailChange}
-                />
+            <div className="header-right">
+              <div className="admin-badge">
+                <User size={14} /> Admin Mode
               </div>
             </div>
+          </header>
 
-            <div style={styles.inlineRow}>
-              <div style={styles.inlineGroup}>
-                <label style={styles.label}>Result Date</label>
-                <input
-                  type="date"
-                  style={styles.input}
-                  name="resultDate"
-                  value={quizDetails.resultDate}
-                  onChange={handleDetailChange}
-                />
-              </div>
-
-              <div style={styles.inlineGroup}>
-                <label style={styles.label}>Result Time</label>
-                <input
-                  type="time"
-                  style={styles.input}
-                  name="resultTime"
-                  value={quizDetails.resultTime}
-                  onChange={handleDetailChange}
-                />
-              </div>
-            </div>
-
-            <div style={styles.inlineRow}>
-              <div style={styles.inlineGroup}>
-                <label style={styles.label}>Duration (min)</label>
-                <input
-                  type="number"
-                  style={styles.input}
-                  name="durationMinutes"
-                  value={quizDetails.durationMinutes}
-                  onChange={handleDetailChange}
-                />
-              </div>
-
-              <div style={styles.inlineGroup}>
-                <label style={styles.label}>Total Marks</label>
-                <input
-                  type="number"
-                  style={styles.input}
-                  name="totalMarks"
-                  value={quizDetails.totalMarks}
-                  onChange={handleDetailChange}
-                />
-              </div>
-            </div>
-
-            <div style={styles.inlineRow}>
-              <div style={styles.inlineGroup}>
-                <label style={styles.label}>Negative Mark / Q</label>
-                <input
-                  type="number"
-                  style={styles.input}
-                  name="negativeMarkPerQuestion"
-                  value={quizDetails.negativeMarkPerQuestion}
-                  onChange={handleDetailChange}
-                />
-              </div>
-
-              <div style={styles.inlineGroup}>
-                <label style={styles.label}>Max Attempts</label>
-                <input
-                  type="number"
-                  style={styles.input}
-                  name="maxAttempts"
-                  value={quizDetails.maxAttempts}
-                  readonly
-                />
-              </div>
-            </div>
-
-            <div style={styles.formGroup}>
-              <label style={styles.label}>Visibility</label>
-              <select
-                style={styles.input}
-                name="visibility"
-                value={quizDetails.visibility}
-                onChange={handleDetailChange}
-              >
-                <option value="private">Private</option>
-                <option value="public">Public</option>
-              </select>
-            </div>
-
-            <button type="submit" style={styles.submitBtn}>
-              Create Quiz
-            </button>
-          </form>
-        </div>
-
-        {/* RIGHT: QUESTIONS PANEL */}
-        <div style={styles.rightPanel}>
-          <div style={styles.questionsHeader}>
-            <h2 style={styles.sectionTitle}>Questions</h2>
-            <button style={styles.addQuestionBtn} onClick={addQuestion}>
-              ➕ Add Question
-            </button>
-          </div>
-
-          <div style={styles.questionList}>
-            {questions.map((q, index) => (
-              <div key={q.id} style={styles.questionCard}>
-                <div style={styles.questionHeader}>
-                  <span style={styles.questionTitle}>Question {index + 1}</span>
-                  <select
-                    style={styles.typeSelect}
-                    value={q.type}
-                    onChange={(e) =>
-                      handleQuestionTypeChange(index, e.target.value)
-                    }
-                  >
-                    <option value="mcq">MCQ</option>
-                    <option value="integer">Integer</option>
-                  </select>
+          <form onSubmit={handleSubmit} className="create-form">
+            <div className="create-layout">
+              
+              {/* LEFT COLUMN: CONFIGURATION */}
+              <div className="panel left-panel">
+                <div className="panel-header">
+                  <Settings className="icon-purple" size={20} />
+                  <h2>Configuration</h2>
                 </div>
+                
+                <div className="form-scroll-area">
+                  <div className="form-grid">
+                    <div className="form-group full">
+                      <label>Quiz Name</label>
+                      <input name="quizName" value={quizDetails.quizName} onChange={handleDetailChange} placeholder="e.g. Physics Chapter 1 Test" />
+                    </div>
 
-                <textarea
-                  style={styles.questionInput}
-                  placeholder="Enter question text..."
-                  value={q.text}
-                  onChange={(e) =>
-                    handleQuestionTextChange(index, e.target.value)
-                  }
-                />
+                    <div className="form-group">
+                      <label>Quiz ID (Unique)</label>
+                      <input name="quizId" value={quizDetails.quizId} onChange={handleDetailChange} placeholder="e.g. PHY101" />
+                    </div>
 
-                {q.type === "mcq" && (
-                  <div style={styles.optionsWrapper}>
-                    {q.options.map((opt, optIndex) => (
-                      <div key={optIndex} style={styles.optionRow}>
-                        <input
-                          style={styles.optionInput}
-                          placeholder={`Option ${optIndex + 1}`}
-                          value={opt}
-                          onChange={(e) =>
-                            handleOptionChange(index, optIndex, e.target.value)
-                          }
-                        />
-                        <label style={styles.optionCorrectLabel}>
-                          <input
-                            type="radio"
-                            name={`correct-${q.id}`}
-                            checked={q.correctIndex === optIndex}
-                            onChange={() =>
-                              handleCorrectIndexChange(index, optIndex)
-                            }
-                          />
-                          Correct
-                        </label>
-                      </div>
-                    ))}
+                    <div className="form-group">
+                      <label>Subject</label>
+                      <input name="subject" value={quizDetails.subject} onChange={handleDetailChange} placeholder="e.g. Physics" />
+                    </div>
+
+                    <div className="form-group full">
+                      <label>Description</label>
+                      <textarea name="description" value={quizDetails.description} onChange={handleDetailChange} placeholder="Short description..." rows={2} />
+                    </div>
+
+                    <div className="form-group full">
+                      <label>Admin Usernames</label>
+                      <input name="adminIds" value={quizDetails.adminIds} onChange={handleDetailChange} placeholder="admin1, admin2" />
+                    </div>
+
+                    <div className="divider-label">Scheduling</div>
+
+                    <div className="form-group">
+                      <label>Start Date</label>
+                      <input type="date" name="startDate" value={quizDetails.startDate} onChange={handleDetailChange} />
+                    </div>
+                    <div className="form-group">
+                      <label>Start Time</label>
+                      <input type="time" name="startTime" value={quizDetails.startTime} onChange={handleDetailChange} />
+                    </div>
+
+                    <div className="form-group">
+                      <label>Result Date</label>
+                      <input type="date" name="resultDate" value={quizDetails.resultDate} onChange={handleDetailChange} />
+                    </div>
+                    <div className="form-group">
+                      <label>Result Time</label>
+                      <input type="time" name="resultTime" value={quizDetails.resultTime} onChange={handleDetailChange} />
+                    </div>
+
+                    <div className="divider-label">Scoring</div>
+
+                    <div className="form-group">
+                      <label>Duration (min)</label>
+                      <input type="number" name="durationMinutes" value={quizDetails.durationMinutes} onChange={handleDetailChange} />
+                    </div>
+                    <div className="form-group">
+                      <label>Total Marks</label>
+                      <input type="number" name="totalMarks" value={quizDetails.totalMarks} onChange={handleDetailChange} />
+                    </div>
+                    <div className="form-group">
+                      <label>Neg. Mark/Q</label>
+                      <input type="number" name="negativeMarkPerQuestion" value={quizDetails.negativeMarkPerQuestion} onChange={handleDetailChange} />
+                    </div>
+                    <div className="form-group">
+                      <label>Max Attempts</label>
+                      <input type="number" name="maxAttempts" value={quizDetails.maxAttempts} readOnly className="read-only" />
+                    </div>
+
+                    <div className="form-group full">
+                      <label>Visibility</label>
+                      <select name="visibility" value={quizDetails.visibility} onChange={handleDetailChange}>
+                        <option value="private">Private</option>
+                        <option value="public">Public</option>
+                      </select>
+                    </div>
                   </div>
-                )}
+                </div>
+              </div>
 
-                {q.type === "integer" && (
-                  <div style={styles.formGroup}>
-                    <label style={styles.label}>Correct Answer (Integer)</label>
-                    <input
-                      type="number"
-                      style={styles.input}
-                      value={q.correctInteger}
-                      onChange={(e) =>
-                        handleIntegerAnswerChange(index, e.target.value)
-                      }
-                    />
+              {/* RIGHT COLUMN: QUESTIONS */}
+              <div className="panel right-panel">
+                <div className="panel-header space-between">
+                  <div className="flex-center">
+                    <Layers className="icon-blue" size={20} />
+                    <h2>Questions ({questions.length})</h2>
                   </div>
-                )}
-
-                <div style={styles.questionFooter}>
-                  <button
-                    style={styles.removeQuestionBtn}
-                    onClick={() => removeQuestion(index)}
-                  >
-                    Remove
+                  <button type="button" className="add-btn" onClick={addQuestion}>
+                    <Plus size={18} /> Add
                   </button>
                 </div>
-              </div>
-            ))}
 
-            {questions.length === 0 && (
-              <div style={{ marginTop: "20px", opacity: 0.7 }}>
-                No questions added yet. Click <b>“Add Question”</b> to begin.
+                <div className="questions-list">
+                  {questions.length === 0 ? (
+                    <div className="empty-questions">
+                      <FileText size={48} />
+                      <p>No questions added yet.<br/>Click <b>"Add"</b> to begin.</p>
+                    </div>
+                  ) : (
+                    questions.map((q, index) => (
+                      <div key={q.id} className="question-card">
+                        <div className="q-card-header">
+                          <span className="q-number">Q{index + 1}</span>
+                          <select 
+                            className="q-type-select"
+                            value={q.type} 
+                            onChange={(e) => handleQuestionTypeChange(index, e.target.value)}
+                          >
+                            <option value="mcq">MCQ</option>
+                            <option value="integer">Integer</option>
+                          </select>
+                          <button type="button" className="delete-icon" onClick={() => removeQuestion(index)}>
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+
+                        <textarea
+                          className="q-text-input"
+                          placeholder="Type your question here..."
+                          value={q.text}
+                          onChange={(e) => handleQuestionTextChange(index, e.target.value)}
+                          rows={2}
+                        />
+
+                        {q.type === "mcq" && (
+                          <div className="options-container">
+                            {q.options.map((opt, optIndex) => (
+                              <div key={optIndex} className="option-row">
+                                <div className="opt-letter">{String.fromCharCode(65 + optIndex)}</div>
+                                <input 
+                                  className="opt-input"
+                                  placeholder={`Option ${optIndex + 1}`}
+                                  value={opt}
+                                  onChange={(e) => handleOptionChange(index, optIndex, e.target.value)}
+                                />
+                                <label className={`correct-toggle ${q.correctIndex === optIndex ? 'active' : ''}`}>
+                                  <input
+                                    type="radio"
+                                    name={`correct-${q.id}`}
+                                    checked={q.correctIndex === optIndex}
+                                    onChange={() => handleCorrectIndexChange(index, optIndex)}
+                                  />
+                                  {q.correctIndex === optIndex ? <CheckSquare size={16} /> : <div className="unchecked-box"></div>}
+                                </label>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        {q.type === "integer" && (
+                          <div className="integer-row">
+                            <label>Correct Integer Answer:</label>
+                            <input
+                              type="number"
+                              className="int-input"
+                              value={q.correctInteger}
+                              onChange={(e) => handleIntegerAnswerChange(index, e.target.value)}
+                              placeholder="e.g. 25"
+                            />
+                          </div>
+                        )}
+                      </div>
+                    ))
+                  )}
+                </div>
               </div>
-            )}
-          </div>
+            </div>
+
+            {/* Bottom Floating Action Bar */}
+            <div className="create-action-bar">
+               <button type="submit" className="submit-btn-large">
+                 <Save size={20} /> Create Quiz
+               </button>
+            </div>
+          </form>
         </div>
       </div>
     </div>
   );
 }
 
-/* -------------------- STYLES -------------------- */
+// ---------------------------------------------------------------------------
+// CSS STYLES
+// ---------------------------------------------------------------------------
+const css = `
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap');
 
-const styles = {
-  profileButton:{
-    cursor:"pointer",
-    padding:0,
-    margin:0,
-    border:0,
-  },
-  page: {
-    height: "100vh",
-    width: "100%",
-    background: "linear-gradient(135deg, #f7f3ff 0%, #efe8ff 100%)",
-    fontFamily: "'Poppins', sans-serif",
-    display: "flex",
-    flexDirection: "column",
-  },
+/* --- Global --- */
+.page { display: flex; height: 100vh; overflow: hidden; background: linear-gradient(135deg, #f7f3ff, #efe8ff); font-family: 'Poppins', sans-serif; position: relative; color: #333; }
+.mobile-menu-btn { display: none; position: fixed; top: 20px; left: 20px; z-index: 1001; width: 50px; height: 50px; border-radius: 12px; background: #fff; border: 2px solid #6a11cb; color: #6a11cb; font-size: 24px; cursor: pointer; box-shadow: 0 4px 15px rgba(106, 17, 203, 0.2); align-items: center; justify-content: center; }
+.overlay { display: none; }
 
-  header: {
-    padding: "15px 30px",
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
+/* --- Sidebar (Default: Desktop Compact) --- */
+.sidebar { width: 80px; background: #fff; box-shadow: 4px 0 30px rgba(106, 17, 203, 0.1); display: flex; flex-direction: column; padding: 30px 0; position: relative; z-index: 999; transition: all 0.3s ease; height: 100%; flex-shrink: 0; }
 
-  logo: {
-    fontSize: "28px",
-    fontWeight: "800",
-    color: "#6a11cb",
-    letterSpacing: "2px",
-  },
+.sidebar-header { min-height: 50px; display: flex; align-items: center; justify-content: center; margin-bottom: 40px; padding: 0; }
+.logo-desktop { width: 40px; height: 40px; background: linear-gradient(135deg, #6a11cb, #2575fc); border-radius: 12px; color: white; font-size: 24px; font-weight: 800; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 15px rgba(106, 17, 203, 0.3); }
+.logo-mobile { display: none; font-size: 32px; font-weight: 800; background: linear-gradient(135deg, #6a11cb, #2575fc); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
 
-  headerRight: {
-    display: "flex",
-    alignItems: "center",
-    gap: "20px",
-  },
+.sidebar-nav { display: flex; flex-direction: column; gap: 8px; padding: 0 10px; flex: 1; overflow-y: auto; }
+.nav-btn { padding: 16px; background: transparent; border-radius: 12px; border: none; font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: flex-start; gap: 12px; transition: all 0.3s ease; color: #555; font-weight: 500; font-family: 'Poppins', sans-serif; position: relative; width: 100%; }
+.nav-btn:hover { background: linear-gradient(135deg, #f5f1ff, #ede5ff); color: #6a11cb; }
+.nav-btn span:first-child { display: flex; align-items: center; justify-content: center; min-width: 24px; } /* Icon wrapper */
+.nav-text { display: none; white-space: nowrap; }
 
-  headerText: {
-    fontSize: "18px",
-    fontWeight: "600",
-  },
+/* Tooltips (Only for Desktop) */
+.tooltip-container:hover .tooltip { opacity: 1; visibility: visible; transform: translateX(0); }
+.tooltip { position: absolute; left: 70px; top: 50%; transform: translateY(-50%) translateX(-10px); background: #333; color: white; padding: 6px 12px; border-radius: 6px; font-size: 12px; white-space: nowrap; opacity: 0; visibility: hidden; transition: all 0.2s ease; z-index: 1000; pointer-events: none; }
+.tooltip::before { content: ''; position: absolute; left: -4px; top: 50%; transform: translateY(-50%); border-width: 4px; border-style: solid; border-color: transparent #333 transparent transparent; }
 
-  profileBox: {
-    display: "flex",
-    alignItems: "center",
-    gap: "10px",
-    padding: "6px 12px",
-    background: "white",
-    borderRadius: "12px",
-    boxShadow: "0 4px 12px rgba(0,0,0,0.10)",
-  },
+.logout-btn { padding: 16px; margin: 20px 10px 40px 10px; background: linear-gradient(135deg, #ff416c, #ff4b2b); color: #fff; border-radius: 12px; border: none; font-size: 16px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: flex-start; gap: 12px; box-shadow: 0 6px 20px rgba(255, 65, 108, 0.3); transition: all 0.3s ease; font-family: 'Poppins', sans-serif; position: relative; width: calc(100% - 20px); }
+.logout-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(255, 65, 108, 0.4); }
+.logout-btn span:first-child { display: flex; align-items: center; justify-content: center; min-width: 24px; }
 
-  profileAvatar: {
-    width: "36px",
-    height: "36px",
-    borderRadius: "50%",
-    background: "#6a11cb",
-    color: "white",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    fontWeight: "700",
-  },
+/* --- Main Content --- */
+.main { flex: 1; overflow: hidden; position: relative; display: flex; flex-direction: column; }
+.main-content-wrapper { flex: 1; padding: 30px; overflow-y: auto; display: flex; flex-direction: column; max-width: 1600px; margin: 0 auto; width: 100%; box-sizing: border-box; }
 
-  profileName: {
-    fontSize: "15px",
-    fontWeight: "600",
-  },
+.bg-circle-1 { position: absolute; top: -100px; right: -100px; width: 400px; height: 400px; background: rgba(106, 17, 203, 0.08); filter: blur(60px); border-radius: 50%; pointer-events: none; }
+.bg-circle-2 { position: absolute; bottom: -150px; left: -150px; width: 500px; height: 500px; background: rgba(37, 117, 252, 0.08); filter: blur(80px); border-radius: 50%; pointer-events: none; }
 
-  content: {
-    flex: 1,
-    display: "flex",
-    padding: "10px 20px 20px",
-    gap: "20px",
-  },
+.page-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; position: relative; z-index: 2; flex-shrink: 0; }
+.page-header h1 { font-size: 28px; font-weight: 700; color: #1a1a1a; margin: 0 0 5px 0; }
+.page-header p { color: #666; font-size: 14px; margin: 0; }
+.admin-badge { background: #e0f2fe; color: #0ea5e9; padding: 6px 12px; border-radius: 20px; font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 6px; }
 
-  leftPanel: {
-    flex: 1,
-    background: "white",
-    borderRadius: "20px",
-    padding: "20px 24px",
-    boxShadow: "0 10px 25px rgba(0,0,0,0.08)",
-    overflowY: "auto",
-  },
+/* --- Forms & Panels --- */
+.create-form { display: flex; flex-direction: column; flex: 1; height: 100%; min-height: 0; }
+.create-layout { display: flex; gap: 20px; flex: 1; min-height: 0; position: relative; z-index: 2; align-items: stretch; }
 
-  rightPanel: {
-    flex: 1.4,
-    background: "white",
-    borderRadius: "20px",
-    padding: "20px 24px",
-    boxShadow: "0 10px 25px rgba(0,0,0,0.08)",
-    display: "flex",
-    flexDirection: "column",
-    overflowY: "auto",
-  },
+.panel { background: white; border-radius: 20px; box-shadow: 0 10px 30px rgba(106, 17, 203, 0.05); border: 1px solid rgba(255,255,255,0.6); display: flex; flex-direction: column; overflow: hidden; }
+.left-panel { width: 350px; flex-shrink: 0; max-height: 100%; }
+.right-panel { flex: 1; background: #fdfcff; max-height: 100%; }
 
-  sectionTitle: {
-    fontSize: "22px",
-    fontWeight: "700",
-    color: "#6a11cb",
-    marginBottom: "15px",
-  },
+.panel-header { padding: 15px 20px; border-bottom: 1px solid #f0f0f0; display: flex; align-items: center; gap: 10px; background: white; flex-shrink: 0; }
+.panel-header h2 { font-size: 16px; font-weight: 700; color: #333; margin: 0; }
+.space-between { justify-content: space-between; }
+.flex-center { display: flex; align-items: center; gap: 10px; }
 
-  formGroup: {
-    marginBottom: "12px",
-  },
+.icon-purple { color: #8b5cf6; }
+.icon-blue { color: #3b82f6; }
 
-  label: {
-    display: "block",
-    marginBottom: "4px",
-    fontWeight: "600",
-    fontSize: "13px",
-  },
+.form-scroll-area, .questions-list { overflow-y: auto; flex: 1; padding: 20px; }
+.questions-list { padding-bottom: 100px; }
 
-  input: {
-    width: "100%",
-    padding: "10px",
-    borderRadius: "10px",
-    border: "2px solid #e3d3ff",
-    fontSize: "14px",
-    outline: "none",
-  },
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.form-group { display: flex; flex-direction: column; gap: 4px; }
+.form-group.full { grid-column: 1 / -1; }
 
-  inlineRow: {
-    display: "flex",
-    gap: "10px",
-  },
+.divider-label { grid-column: 1 / -1; margin-top: 10px; margin-bottom: 5px; font-size: 11px; font-weight: 700; text-transform: uppercase; color: #9ca3af; letter-spacing: 0.5px; border-bottom: 1px solid #f0f0f0; padding-bottom: 5px; }
 
-  inlineGroup: {
-    flex: 1,
-  },
+label { font-size: 12px; font-weight: 600; color: #555; display: flex; align-items: center; gap: 6px; }
+input, textarea, select { width: 100%; padding: 8px 10px; border-radius: 8px; border: 2px solid #f0f0f0; font-family: 'Poppins', sans-serif; font-size: 13px; transition: all 0.2s; background: #f9fafb; color: #333; box-sizing: border-box; }
+input:focus, textarea:focus, select:focus { border-color: #8b5cf6; background: white; outline: none; box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1); }
+textarea { resize: vertical; }
+.read-only { background: #f3f4f6; color: #9ca3af; cursor: not-allowed; }
 
-  submitBtn: {
-    width: "100%",
-    marginTop: "10px",
-    padding: "12px",
-    background: "linear-gradient(135deg, #6a11cb, #2575fc)",
-    color: "white",
-    border: "none",
-    borderRadius: "10px",
-    fontSize: "16px",
-    fontWeight: "700",
-    cursor: "pointer",
-    boxShadow: "0 8px 20px rgba(106,17,203,0.4)",
-  },
+.add-btn { background: #eff6ff; color: #3b82f6; border: none; padding: 6px 12px; border-radius: 8px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: all 0.2s; font-size: 13px; }
+.add-btn:hover { background: #dbeafe; }
 
-  questionsHeader: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: "10px",
-  },
+.empty-questions { text-align: center; color: #cbd5e1; margin-top: 60px; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.empty-questions p { color: #94a3b8; font-size: 14px; line-height: 1.5; }
 
-  addQuestionBtn: {
-    padding: "8px 14px",
-    borderRadius: "10px",
-    border: "none",
-    background: "#f0e5ff",
-    color: "#6a11cb",
-    fontWeight: "600",
-    cursor: "pointer",
-  },
+.question-card { background: white; padding: 15px; border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.03); border: 1px solid #f0f0f0; position: relative; animation: fadeIn 0.3s ease; margin-bottom: 15px; }
+.q-card-header { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.q-number { background: #8b5cf6; color: white; font-size: 11px; font-weight: 700; padding: 4px 8px; border-radius: 6px; }
+.q-type-select { width: auto; padding: 4px 8px; font-size: 12px; background: white; border-color: #e5e7eb; }
+.delete-icon { margin-left: auto; background: none; border: none; color: #ef4444; cursor: pointer; opacity: 0.6; padding: 5px; border-radius: 6px; }
+.delete-icon:hover { opacity: 1; background: #fee2e2; }
 
-  questionList: {
-    marginTop: "5px",
-    display: "flex",
-    flexDirection: "column",
-    gap: "12px",
-  },
+.q-text-input { font-size: 14px; margin-bottom: 10px; border-color: #e5e7eb; background: white; }
 
-  questionCard: {
-    background: "#faf7ff",
-    borderRadius: "14px",
-    padding: "14px",
-    border: "1px solid #e3d3ff",
-  },
+.options-container { display: flex; flex-direction: column; gap: 8px; }
+.option-row { display: flex; align-items: center; gap: 10px; }
+.opt-letter { width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; background: #f3f4f6; color: #6b7280; font-weight: 600; border-radius: 8px; font-size: 12px; }
+.opt-input { background: white; border-color: #e5e7eb; padding: 6px 10px; }
 
-  questionHeader: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: "8px",
-  },
+.correct-toggle { display: flex; align-items: center; cursor: pointer; position: relative; }
+.correct-toggle input { display: none; }
+.unchecked-box { width: 16px; height: 16px; border: 2px solid #d1d5db; border-radius: 4px; }
+.correct-toggle.active { color: #22c55e; }
 
-  questionTitle: {
-    fontWeight: "700",
-  },
+.integer-row { display: flex; align-items: center; gap: 10px; background: #f8fafc; padding: 10px; border-radius: 10px; }
+.int-input { width: 100px; text-align: center; font-weight: 700; color: #3b82f6; }
 
-  typeSelect: {
-    padding: "6px 10px",
-    borderRadius: "8px",
-    border: "1px solid #d4c4ff",
-    fontSize: "13px",
-  },
+.create-action-bar { margin-top: 20px; display: flex; justify-content: center; }
+.submit-btn-large { padding: 12px 40px; background: linear-gradient(135deg, #6a11cb, #2575fc); color: white; border: none; border-radius: 12px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 10px; font-size: 16px; box-shadow: 0 10px 30px rgba(106, 17, 203, 0.3); transition: transform 0.2s; }
+.submit-btn-large:hover { transform: translateY(-2px); box-shadow: 0 15px 40px rgba(106, 17, 203, 0.4); }
 
-  questionInput: {
-    width: "100%",
-    borderRadius: "10px",
-    border: "2px solid #e3d3ff",
-    padding: "8px",
-    fontSize: "14px",
-    resize: "none",
-    minHeight: "50px",
-    marginBottom: "8px",
-  },
+/* --- Mobile Responsive (Wide Sidebar + Text) --- */
+@media(max-width: 1024px) {
+  .create-layout { flex-direction: column; overflow-y: auto; display: block; }
+  .left-panel { width: 100%; max-height: none; margin-bottom: 20px; }
+  .right-panel { max-height: none; overflow: visible; }
+  .form-scroll-area, .questions-list { overflow: visible; }
+}
 
-  optionsWrapper: {
-    display: "flex",
-    flexDirection: "column",
-    gap: "6px",
-    marginBottom: "6px",
-  },
+@media(max-width: 768px) {
+  .mobile-menu-btn { display: flex; }
+  .overlay { display: block; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 998; }
+  
+  /* Sidebar mobile overrides */
+  .sidebar { position: fixed; top: 0; left: 0; bottom: 0; transform: translateX(-100%); width: 280px !important; padding: 30px 20px; }
+  .sidebar.mobile-open { transform: translateX(0); }
+  
+  /* Mobile: Show Text & Full Logo */
+  .nav-text { display: inline; }
+  .tooltip { display: none !important; }
+  .nav-btn { justify-content: flex-start; padding: 16px 20px; }
+  .logout-btn { justify-content: flex-start; padding: 16px 20px; margin: 20px; width: auto; }
+  
+  .logo-desktop { display: none; }
+  .logo-mobile { display: block; }
 
-  optionRow: {
-    display: "flex",
-    alignItems: "center",
-    gap: "8px",
-  },
+  .main-content-wrapper { padding: 80px 20px 20px; }
+  .page-header { flex-direction: column; gap: 10px; }
+  .form-grid { grid-template-columns: 1fr; }
+  .submit-btn-large { width: 100%; justify-content: center; }
+}
 
-  optionInput: {
-    flex: 1,
-    padding: "8px",
-    borderRadius: "8px",
-    border: "2px solid #e3d3ff",
-    fontSize: "14px",
-  },
-
-  optionCorrectLabel: {
-    fontSize: "13px",
-    display: "flex",
-    alignItems: "center",
-    gap: "4px",
-  },
-
-  questionFooter: {
-    display: "flex",
-    justifyContent: "flex-end",
-  },
-
-  removeQuestionBtn: {
-    padding: "6px 10px",
-    borderRadius: "8px",
-    border: "none",
-    background: "#ffe5e5",
-    color: "#b10c0c",
-    fontSize: "13px",
-    cursor: "pointer",
-  },
-};
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+.loading-state { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; color: #6a11cb; font-weight: 500; font-family: 'Poppins', sans-serif; background: #f7f3ff; }
+.spinner { width: 40px; height: 40px; border: 4px solid #e0d4fc; border-top: 4px solid #6a11cb; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 20px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+`;

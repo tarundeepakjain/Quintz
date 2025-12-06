@@ -4,6 +4,9 @@ import Profile from "./components/Profile";
 import Home from "./components/Home";
 import GiveQuiz from "./components/GiveQuiz";
 import CreateQuiz from "./components/CreateQuiz";
+import PastQuizzes from "./components/PastQuizzes";
+import ResultsPage from "./components/Results";
+import Summary from "./components/Summary";
 
 function App() {
   return (
@@ -12,8 +15,11 @@ function App() {
         <Route path="/auth" element={<QuintzAuth/>} />
         <Route path="/profile" element={<Profile/>} />
         <Route path="/" element={<Home/>} />
-        <Route path="give-quiz/:quizID" element={<GiveQuiz/>} />
+        <Route path="give-quiz/:quizId" element={<GiveQuiz/>} />
         <Route path="/create-quiz" element={<CreateQuiz/>} />
+        <Route path="/past-quizzes" element={<PastQuizzes/>} />
+        <Route path="/view-results/:quizId" element={<ResultsPage/>} />
+        <Route path="/summary/:quizId/:username" element={<Summary />} />
       </Routes>
     </BrowserRouter>
   );
