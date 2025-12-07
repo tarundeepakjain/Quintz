@@ -4,12 +4,13 @@ import axios from "axios";
 
 const Summary = () =>{
     const { quizId,username } = useParams();
+    
     useEffect(() => {
     const fetchResults = async () => {
       try {
         const token = localStorage.getItem("access");
         if (!token) {
-           window.location.href = `${window.location.origin}/auth`;
+           window.location.href = "/auth";
            return;
         }
 

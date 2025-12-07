@@ -74,7 +74,7 @@ export default function GiveQuiz() {
       const res = await axios.get(`http://localhost:5001/quiz/${quizId}`, { 
         headers: { Authorization: "Bearer " + token } 
       });
-      if(res.data.message==="Already Given"){
+      if(res.data.message==="Already Given" || res.data.message==="Quiz Doesn't Exist"){
         setQuizData(null);
         setLoading(false);
         return;
@@ -188,7 +188,7 @@ export default function GiveQuiz() {
   if (!quizData) return (
     <div className="quiz-container loading-state">
       <style>{css}</style>
-      <p>Quiz not found or Already Given.</p>
+      <p>Quiz Not Found/Not Started/Already ended.</p>
         <button className="home-btn" onClick={() => window.close()}>
             <LogOut size={18} /> Exit
         </button>

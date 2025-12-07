@@ -121,13 +121,20 @@ def addQuestion():
     questions = []
     data = request.get_json() or []
     for ques in data:
+        if("_id" in ques):
+            mongo.db.questions.update_one({"_id":ObjectId(ques["_id"])},{
+                "$inc":{"askedIn":1}
+            })
+            questions.append(ques["_id"])
+            continue
+
         doc = {
             "askedIn": 1,
             "type": ques.get("type"),
             "text": ques.get("text"),
             "options": ques.get("options") if ques.get("type") == "mcq" else [],
-            "subject":None,
-            "tag":None
+            "subject":ques.get("subject"),
+            "tag":ques.get("tag")
         }
         if ques.get("type") == "mcq":
             doc["correctIndex"] = ques.get("correctIndex")
@@ -180,21 +187,24 @@ def createQuiz():
 @jwt_required()
 def quiz(quizID):
     currUser=get_jwt_identity()
-    try:
-        qz = mongo.db.quizzes.find_one({"quizDetails.quizId":quizID})
-        if not qz:
-            return jsonify(message="Quiz Doesn't Exist")
-        qzR = mongo.db.quizResults.find_one({"quizID":quizID})
-        if currUser in qzR:
-            return jsonify(message="Already Given")
-        ques = []
-        for q in qz["questions"]:
-            qu=mongo.db.questions.find_one({"_id":ObjectId(q)})
-            qu["_id"]=str(qu["_id"])
-            ques.append(qu)
-        return jsonify(message="Quiz Found",quizDetails=qz["quizDetails"],questions=ques)
-    except:
-        return jsonify(message="An Error Occured.")
+    qz = mongo.db.quizzes.find_one({"quizDetails.quizId":quizID})
+    if not qz:
+        return jsonify(message="Quiz Doesn't Exist")
+    qzR = mongo.db.quizResults.find_one({"quizID":quizID})
+    if currUser in qzR:
+        return jsonify(message="Already Given")
+    start_time = datetime.fromisoformat(qz["startTime"])
+    end_time = start_time + timedelta(minutes=qz["durationMinutes"])
+    now = datetime.now()
+    if start_time>now or end_time<now:
+        return jsonify(message="Quiz hasn't started.")
+    
+    ques = []
+    for q in qz["questions"]:
+        qu=mongo.db.questions.find_one({"_id":ObjectId(q)})
+        qu["_id"]=str(qu["_id"])
+        ques.append(qu)
+    return jsonify(message="Quiz Found",quizDetails=qz["quizDetails"],questions=ques)
 
 @app.route('/quiz/submit',methods=["POST"]) # With Quiz Results
 @jwt_required()
@@ -235,6 +245,8 @@ def submitQuiz():
     })
     mongo.db.users.update_one({"username":currUser},{
         "$inc":{"stats.totalQuizzes":1},
+        "$inc":{"stats.attempts":1},
+        "$max":{"stats.bestScore":score},
         "$push":{"Quizzes":quizID}
     })
     return jsonify(message=currUser+" result added successfully.")
@@ -294,6 +306,20 @@ def pastQuizzes():
                 "id": qz["quizDetails"]["quizId"]
             })
     return quizzes
+
+@app.route('/get-all-questions',methods=["GET"])
+@jwt_required()
+def getQuestion():
+    ques = list(mongo.db.questions.find({}))
+    for q in ques:
+        q["_id"]=str(q["_id"])
+    return ques
+
+@app.route('/get-tags/<subject>',methods=["GET"])
+@jwt_required()
+def getTags(subject):
+    res = mongo.db.miscellaneous.find_one({"type":"tags"})
+    return res[subject] if (subject in res) else []
 
 if __name__ == "__main__":
     app.run(port=5001,debug=True)
