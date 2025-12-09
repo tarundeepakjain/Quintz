@@ -5,6 +5,7 @@ import { Home, Clock, BarChart2, User, LogOut, X, Menu } from "lucide-react";
 export default function Profile() {
   const [user, setUser] = useState(null);
   const [stats, setStats] = useState({ "a": 0 });
+  const [performance, setPerformance] = useState({ x: [], y: [] }); // New State for Graph
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
@@ -46,7 +47,27 @@ export default function Profile() {
     }
   };
 
-  useEffect(() => { fetchProfile(); }, []);
+  const fetchPerformance = async () => {
+    try {
+      const token = localStorage.getItem("access");
+      const res = await axios.get("http://localhost:5001/get-performance", {
+        headers: { Authorization: "Bearer " + token }
+      });
+      setPerformance(res.data);
+    } catch (err) {
+      // Mock Data for Preview if backend fails
+      // Simulating data based on the student mock user above
+      setPerformance({
+        x: ["2024-07", "2024-08", "2024-09", "2024-10", "2024-11", "2024-12"],
+        y: [65, 72, 68, 85, 90, 88] 
+      });
+    }
+  };
+
+  useEffect(() => { 
+    fetchProfile(); 
+    fetchPerformance(); // Fetch performance data on load
+  }, []);
 
   const logout = () => {
     localStorage.removeItem("access");
@@ -102,6 +123,14 @@ export default function Profile() {
     }
   };
 
+  // Helper to format 2024-12 to Dec, 2024
+  const formatXAxisDate = (dateStr) => {
+    if (!dateStr) return "";
+    const [year, month] = dateStr.split('-');
+    const date = new Date(parseInt(year), parseInt(month) - 1);
+    return date.toLocaleString('default', { month: 'short', year: 'numeric' });
+  };
+
   if (!user) return (
     <div className="loading">
       <style>{css}</style>
@@ -111,6 +140,29 @@ export default function Profile() {
   );
 
   const avatarLetter = user.name ? user.name[0].toUpperCase() : "U";
+
+  // --- Graph Calculations ---
+  // We use a fixed viewBox for SVG (e.g., 1000x400) and scale points to it.
+  const chartWidth = 1000;
+  const chartHeight = 350;
+  const paddingX = 60;
+  const paddingY = 50;
+  
+  const maxY = Math.max(...(performance.y.length ? performance.y : [100])) * 1.2; // Add 20% headroom
+  const minY = 0;
+  
+  const points = performance.y.map((val, i) => {
+    const x = paddingX + (i / (performance.x.length - 1 || 1)) * (chartWidth - paddingX * 2);
+    const y = chartHeight - paddingY - (val / maxY) * (chartHeight - paddingY * 2);
+    return `${x},${y}`;
+  }).join(" ");
+
+  // Create area polygon (start bottom-left, go to points, end bottom-right)
+  const areaPoints = `
+    ${paddingX},${chartHeight - paddingY} 
+    ${points} 
+    ${chartWidth - paddingX},${chartHeight - paddingY}
+  `;
 
   return (
     <div className="page">
@@ -146,12 +198,6 @@ export default function Profile() {
                   <span><User size={22} /></span>
                   <span className="nav-text">Profile</span>
                   <span className="tooltip">Profile</span>
-                </button>
-      
-                <button className="nav-btn tooltip-container">
-                  <span><BarChart2 size={22} /></span>
-                  <span className="nav-text">Performance</span>
-                  <span className="tooltip">Performance</span>
                 </button>
               </nav>
       
@@ -214,6 +260,77 @@ export default function Profile() {
             );
           })}
         </div>
+
+        {/* --- PERFORMANCE GRAPH SECTION --- */}
+        {performance.x.length > 0 && (
+          <div className="chart-section fade-in-up">
+            <h3 className="stats-title" style={{marginTop: '40px'}}>
+              <span>📊</span> Performance Overview
+            </h3>
+            <div className="chart-card">
+              <div className="chart-header">
+                <h4>
+                  {user.userType === 'admin' ? "Number of Quizzes Created" : "Average Score Over Time"}
+                </h4>
+                <div className="legend">
+                  <span className="dot"></span> {user.userType === 'admin' ? 'Quizzes' : 'Score'}
+                </div>
+              </div>
+              
+              <div className="chart-container">
+                <svg viewBox={`0 0 ${chartWidth} ${chartHeight}`} className="perf-chart">
+                  <defs>
+                    <linearGradient id="chartGradient" x1="0" x2="0" y1="0" y2="1">
+                      <stop offset="0%" stopColor="#6a11cb" stopOpacity="0.4"/>
+                      <stop offset="100%" stopColor="#6a11cb" stopOpacity="0.0"/>
+                    </linearGradient>
+                  </defs>
+
+                  {/* Grid Lines (Horizontal) */}
+                  {[0, 1, 2, 3, 4].map((i) => {
+                    const y = chartHeight - paddingY - (i / 4) * (chartHeight - paddingY * 2);
+                    return (
+                      <g key={i}>
+                        <line x1={paddingX} y1={y} x2={chartWidth - paddingX} y2={y} stroke="#e0e0e0" strokeDasharray="5,5" />
+                        <text x={paddingX - 10} y={y + 5} textAnchor="end" fontSize="14" fill="#888">
+                          {Math.round((i / 4) * maxY)}
+                        </text>
+                      </g>
+                    );
+                  })}
+
+                  {/* Area Fill */}
+                  <polygon points={areaPoints} fill="url(#chartGradient)" />
+
+                  {/* The Line */}
+                  <polyline points={points} fill="none" stroke="#6a11cb" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
+
+                  {/* Data Points */}
+                  {performance.y.map((val, i) => {
+                     const x = paddingX + (i / (performance.x.length - 1 || 1)) * (chartWidth - paddingX * 2);
+                     const y = chartHeight - paddingY - (val / maxY) * (chartHeight - paddingY * 2);
+                     return (
+                       <circle key={i} cx={x} cy={y} r="6" fill="#fff" stroke="#6a11cb" strokeWidth="3" className="chart-point">
+                         <title>{val}</title>
+                       </circle>
+                     )
+                  })}
+
+                  {/* X Axis Labels */}
+                  {performance.x.map((date, i) => {
+                    const x = paddingX + (i / (performance.x.length - 1 || 1)) * (chartWidth - paddingX * 2);
+                    const y = chartHeight - 10;
+                    return (
+                      <text key={i} x={x} y={y} textAnchor="middle" fontSize="14" fill="#666">
+                        {formatXAxisDate(date)}
+                      </text>
+                    );
+                  })}
+                </svg>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {showEditModal && (
@@ -281,6 +398,7 @@ const css = `
 @keyframes fadeIn{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
 @keyframes spin{to{transform:rotate(360deg)}}
 @keyframes progressBar{from{width:0}to{width:100%}}
+.fade-in-up{animation:fadeIn 0.8s ease backwards}
 
 .loading{display:flex;flex-direction:column;justify-content:center;align-items:center;height:100vh;background:linear-gradient(135deg,#f7f3ff,#efe8ff);font-family:'Poppins',sans-serif;color:#6a11cb;font-size:18px}
 .spinner{width:50px;height:50px;border:5px solid #e8e0ff;border-top:5px solid #6a11cb;border-radius:50%;animation:spin 1s linear infinite;margin-bottom:20px}
@@ -327,6 +445,17 @@ const css = `
 .stat-card h3{font-size:36px;font-weight:800;margin-bottom:8px;color:var(--color)}
 .stat-card p{font-size:15px;color:#666;font-weight:500}
 .stat-bar{position:absolute;bottom:0;left:0;height:4px;width:0;background:var(--color);animation:progressBar 1.5s ease forwards;opacity:.6}
+
+/* --- New Chart Styles --- */
+.chart-card { background: #fff; padding: 25px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); display: flex; flex-direction: column; }
+.chart-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
+.chart-header h4 { margin: 0; font-size: 18px; font-weight: 600; color: #444; }
+.legend { font-size: 14px; color: #666; display: flex; align-items: center; gap: 6px; }
+.dot { width: 10px; height: 10px; background: #6a11cb; border-radius: 50%; display: inline-block; }
+.chart-container { width: 100%; position: relative; overflow: hidden; }
+.perf-chart { width: 100%; height: auto; display: block; overflow: visible; }
+.chart-point { transition: r 0.3s ease, stroke-width 0.3s ease; cursor: pointer; }
+.chart-point:hover { r: 8; stroke-width: 4; }
 
 .modal-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.6);backdrop-filter:blur(8px);display:flex;justify-content:center;align-items:center;z-index:2000;padding:20px;animation:fadeIn .3s ease}
 

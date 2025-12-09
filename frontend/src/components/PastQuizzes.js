@@ -92,12 +92,6 @@ export default function PastQuizzes() {
             <span className="nav-text">Profile</span>
             <span className="tooltip">Profile</span>
           </button>
-
-          <button className="nav-btn tooltip-container">
-            <span><BarChart2 size={22} /></span>
-            <span className="nav-text">Performance</span>
-            <span className="tooltip">Performance</span>
-          </button>
         </nav>
 
         <button className="logout-btn tooltip-container" onClick={logout}>

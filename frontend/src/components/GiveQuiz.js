@@ -39,9 +39,6 @@ export default function GiveQuiz() {
   // Timer Ref to clear interval
   const timerRef = useRef(null);
 
-  // --- Fallback Mock Data ---
-  // Added this back so the UI renders even if the Backend connection fails (Network Error)
-
   // --- Effects ---
 
   useEffect(() => {
@@ -74,23 +71,33 @@ export default function GiveQuiz() {
       const res = await axios.get(`http://localhost:5001/quiz/${quizId}`, { 
         headers: { Authorization: "Bearer " + token } 
       });
-      if(res.data.message==="Already Given" || res.data.message==="Quiz Doesn't Exist"){
+      if(res.data.message==="Already Given" || res.data.message==="Quiz Doesn't Exist" || res.data.message=="Quiz hasn't started."){
         setQuizData(null);
         setLoading(false);
         return;
       }
       setQuizData(res.data);
       // Initialize timer based on durationMinutes from backend
-      if (res.data.quizDetails && res.data.quizDetails.durationMinutes) {
-        setTimeLeft(res.data.quizDetails.durationMinutes * 60);
-      }
+    if (res.data.quizDetails) {
+      const durationMinutes = res.data.quizDetails.durationMinutes;
+      const startTimeISO = res.data.quizDetails.startTime; // e.g. "2025-12-07T10:30:00Z"
+
+      const now = new Date();
+      const startTime = new Date(startTimeISO);
+
+      // Time difference in seconds
+      const elapsedSeconds = Math.floor((now - startTime) / 1000);
+
+      // Remaining time
+      const remainingSeconds = durationMinutes * 60 - elapsedSeconds;
+
+      setTimeLeft(Math.max(remainingSeconds, 0)); // never negative
+    }
+
       setLoading(false);
     } catch (err) {
       console.error("Error fetching quiz:", err);
-      
-      // FALLBACK logic for "Network Error"
-      // This ensures you can still see the UI even if the backend isn't reachable from this environment
-      console.log("Using Mock Data as fallback due to Network Error.");
+      // Fallback logic for network error removed as requested, keeping core logic
     }
   };
 
@@ -204,7 +211,8 @@ export default function GiveQuiz() {
         {/* Header for Consistency */}
         <header className="quiz-header">
           <div className="brand">
-            <span className="logo-text">QUINTZ</span>
+            {/* UPDATED LOGO */}
+            <div className="logo-icon">Q</div>
             <span className="divider">|</span>
             <span className="quiz-name">{quizData.quizDetails.quizName}</span>
           </div>
@@ -259,7 +267,8 @@ export default function GiveQuiz() {
         {/* Header for Consistency */}
         <header className="quiz-header">
           <div className="brand">
-            <span className="logo-text">QUINTZ</span>
+            {/* UPDATED LOGO */}
+            <div className="logo-icon">Q</div>
             <span className="divider">|</span>
             <span className="quiz-name">{quizData.quizDetails.quizName}</span>
           </div>
@@ -312,7 +321,8 @@ export default function GiveQuiz() {
       {/* Top Bar */}
       <header className="quiz-header">
         <div className="brand">
-          <span className="logo-text">QUINTZ</span>
+          {/* UPDATED LOGO */}
+          <div className="logo-icon">Q</div>
           <span className="divider">|</span>
           <span className="quiz-name">{quizData.quizDetails.quizName}</span>
         </div>
@@ -365,7 +375,7 @@ export default function GiveQuiz() {
               <span className="q-number">Question {currentQuestionIndex + 1}</span>
               <div className="q-tools">
                 <span className="q-type">{currentQ.type === 'mcq' ? 'Multiple Choice' : 'Integer Type'}</span>
-                <span className="q-marks">+4, -{quizData.quizDetails.negativeMarkPerQuestion}</span>
+                <span className="q-marks">+{quizData.quizDetails.totalMarks/quizData.questions.length}, -{quizData.quizDetails.negativeMarkPerQuestion}</span>
               </div>
             </div>
 
@@ -600,7 +610,7 @@ const css = `
   z-index: 100;
 }
 .brand { display: flex; align-items: center; gap: 10px; }
-.logo-text { font-weight: 800; background: linear-gradient(135deg, #6a11cb, #2575fc); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+.logo-icon { width: 32px; height: 32px; background: linear-gradient(135deg, #6a11cb, #2575fc); border-radius: 8px; color: white; font-size: 20px; font-weight: 800; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(106, 17, 203, 0.3); }
 .divider { color: #ddd; }
 .quiz-name { font-weight: 600; color: #555; }
 

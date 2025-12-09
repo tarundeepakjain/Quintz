@@ -7,6 +7,7 @@ import CreateQuiz from "./components/CreateQuiz";
 import PastQuizzes from "./components/PastQuizzes";
 import ResultsPage from "./components/Results";
 import Summary from "./components/Summary";
+import EditQuiz from "./components/EditQuiz";
 
 function App() {
   return (
@@ -20,6 +21,7 @@ function App() {
         <Route path="/past-quizzes" element={<PastQuizzes/>} />
         <Route path="/view-results/:quizId" element={<ResultsPage/>} />
         <Route path="/summary/:quizId/:username" element={<Summary />} />
+        <Route path="/edit-quiz/:quizId" element={<EditQuiz />} />
       </Routes>
     </BrowserRouter>
   );

@@ -19,6 +19,7 @@ from datetime import timedelta,datetime
 load_dotenv()
 
 app = Flask(__name__)
+#app.config["DEBUG"]=True
 # Setup the Flask-JWT-Extended extension
 app.config["JWT_SECRET_KEY"] = os.environ.get("JWT_SECRET_KEY")  # Change this!
 app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(days=7) #Login Required in every 7 days
@@ -30,9 +31,11 @@ mongo = PyMongo(app)
 CORS(app)
 
 def removeQuestions(questions):
+    qDB = mongo.db.questions
     for q in questions:
-        qDB = mongo.db.questions
         ques = qDB.find_one({"_id":ObjectId(q)})
+        if not ques:
+            continue
         ques["askedIn"]-=1
         qDB.delete_one({"_id":ObjectId(q)})
         if ques["askedIn"]>0:
@@ -40,7 +43,7 @@ def removeQuestions(questions):
 
 @app.route("/signup", methods=["POST"])
 def register():
-    statAdmin={"totalQuizzes": 0,"Total Participants": 0,"Avg Quizzes (per Year)":0,"MM Quiz made":0}
+    statAdmin={"totalQuizzes": 0,"Total Participants": 0,"Public Quizzes":0,"MM Quiz made":0}
     statStudent={"totalQuizzes": 0,"avgScore": 0,"bestScore": 0,"attempts": 0}
     userCred = request.json
     user = mongo.db.users.find_one({"username":userCred["username"]})
@@ -168,19 +171,28 @@ def createQuiz():
             return jsonify(message="Quiz ID already exist.")
 
         res = mongo.db.quizzes.insert_one(data)
-        for admin in data["quizDetails"]["adminIds"]:
-            mongo.db.users.update_one({"username":admin},
-            {
-                "$inc":{"stats.totalQuizzes":1},
-                "$push":{"Quizzes":data["quizDetails"]["quizId"]},
-                "$max":{"stats.MM Quiz made":data["quizDetails"]["totalMarks"]}
-            })
         result={
             "quizID":data["quizDetails"]["quizId"]
         }
         mongo.db.quizResults.insert_one(result)
+        isPublic=(data["quizDetails"]["visibility"]=="public")
+        inc_fields={}
+        for admin in data["quizDetails"]["adminIds"]:
+            mongo.db.users.update_one({"username":admin},
+            {
+                "$inc":{"stats.totalQuizzes":1,
+                        "stats.Public Quizzes":int(isPublic)},
+                "$push":{"Quizzes":data["quizDetails"]["quizId"]},
+                "$max":{"stats.MM Quiz made":data["quizDetails"]["totalMarks"]}
+            })
+            inc_fields[f"{admin}.{data['quizDetails']['startTime'][:7]}"]=1
+
+        mongo.db.miscellaneous.update_one({"type":"performance"},{
+            "$inc":inc_fields
+        })
         return jsonify(message="Quiz Created Successfully.")
-    except:
+    except Exception as e:
+        print(e)
         return jsonify(message="An Error Occured.")
 
 @app.route('/quiz/<quizID>',methods=["GET"])
@@ -191,20 +203,20 @@ def quiz(quizID):
     if not qz:
         return jsonify(message="Quiz Doesn't Exist")
     qzR = mongo.db.quizResults.find_one({"quizID":quizID})
+    message="Quiz Found"
     if currUser in qzR:
-        return jsonify(message="Already Given")
-    start_time = datetime.fromisoformat(qz["startTime"])
-    end_time = start_time + timedelta(minutes=qz["durationMinutes"])
+        message="Already Given"
+    start_time = datetime.fromisoformat(qz["quizDetails"]["startTime"])
+    end_time = start_time + timedelta(minutes=qz["quizDetails"]["durationMinutes"])
     now = datetime.now()
     if start_time>now or end_time<now:
-        return jsonify(message="Quiz hasn't started.")
-    
+        message="Quiz hasn't started."
     ques = []
     for q in qz["questions"]:
         qu=mongo.db.questions.find_one({"_id":ObjectId(q)})
         qu["_id"]=str(qu["_id"])
         ques.append(qu)
-    return jsonify(message="Quiz Found",quizDetails=qz["quizDetails"],questions=ques)
+    return jsonify(message=message,quizDetails=qz["quizDetails"],questions=ques)
 
 @app.route('/quiz/submit',methods=["POST"]) # With Quiz Results
 @jwt_required()
@@ -243,12 +255,33 @@ def submitQuiz():
             currUser+".endTime":data["endTime"]
         }
     })
+    val=mongo.db.miscellaneous.find_one({"type":"performance"})
+    avg=score*10/quiz["quizDetails"]["totalMarks"]
+    if(currUser in val):
+        for v in val[currUser].values():
+            avg+=v
+        avg=avg/(len(val[currUser])+1)
     mongo.db.users.update_one({"username":currUser},{
-        "$inc":{"stats.totalQuizzes":1},
-        "$inc":{"stats.attempts":1},
+        "$inc":{"stats.totalQuizzes":1,
+                "stats.attempts":1},
+        "$set":{"stats.avgScore":avg},
         "$max":{"stats.bestScore":score},
         "$push":{"Quizzes":quizID}
     })
+    score=score*10/quiz["quizDetails"]["totalMarks"]
+
+    if currUser in val: 
+        if quiz["quizDetails"]["startTime"][:7] not in val[currUser]:
+            val[currUser][quiz["quizDetails"]["startTime"][:7]]=score
+        else: score=(val[currUser][quiz["quizDetails"]["startTime"][:7]]+score)/2
+    else: val=0
+    mongo.db.miscellaneous.update_one({"type":"performance"},{
+        "$set":{currUser+"."+quiz["quizDetails"]["startTime"][:7]:score}
+    })
+    for admin in quiz["quizDetails"]["adminIds"]:
+        mongo.db.users.update_one({"username":admin},{
+            "$inc":{"stats.Total Participants":1}
+        })
     return jsonify(message=currUser+" result added successfully.")
 
 @app.route('/quiz-results/<quizID>',methods=["GET"])
@@ -280,7 +313,8 @@ def getPublicQuizzes():
                 "title": qz["quizDetails"]["quizName"],
                 "startTime": qz["quizDetails"]["startTime"],
                 "duration": qz["quizDetails"]["durationMinutes"], 
-                "id": qz["quizDetails"]["quizId"]
+                "id": qz["quizDetails"]["quizId"],
+                "adminIds":qz["quizDetails"]["adminIds"]
             })
     return quizzes
 
@@ -321,5 +355,68 @@ def getTags(subject):
     res = mongo.db.miscellaneous.find_one({"type":"tags"})
     return res[subject] if (subject in res) else []
 
+@app.route('/delete-quiz/<quizId>',methods=["GET"])
+@jwt_required()
+def deleteQuiz(quizId):
+    currUser=get_jwt_identity()
+    quiz = mongo.db.quizzes.find_one({"quizDetails.quizId":quizId})
+    if not quiz:
+        return jsonify(message="Quiz not Found.")
+    removeQuestions(quiz["questions"])
+    isPublic=(quiz["quizDetails"]["visibility"]=="public")
+    dec_fields={}
+    for admin in quiz["quizDetails"]["adminIds"]:
+        mongo.db.users.update_one({"username":admin},{
+            "$pull":{"Quizzes":quizId},
+            "$inc":{"stats.totalQuizzes":-1,
+                    "stats.Public Quizzes":-int(isPublic)}
+        })
+        dec_fields[f"{admin}.{quiz["quizDetails"]["startTime"][:7]}"]=-1
+    mongo.db.miscellaneous.update_one({"type":"performance"},{
+        "$inc":dec_fields
+    })
+    mongo.db.quizzes.delete_one({"quizDetails.quizId":quizId})
+    mongo.db.quizResults.delete_one({"quizID":quizId})
+    return jsonify(message="Quiz Deleted Successfully.")
+
+@app.route('/get-performance',methods=["GET"])
+@jwt_required()
+def getPerformance():
+    currUser=get_jwt_identity()
+    y=[]
+    x=[]
+    res = mongo.db.miscellaneous.find_one({"type":"performance"})
+    for k,v in res[currUser].items():
+        x.append(k)
+        y.append(v)
+
+    return jsonify(x=x,y=y)
+
+@app.route('/edit-quiz',methods=["POST"])
+@jwt_required()
+def editQuiz():
+    currUser=get_jwt_identity()
+    data=request.json
+    qId=data["quizDetails"]["quizId"]
+    if currUser not in data["quizDetails"]["adminIds"]:
+        return jsonify(message="Only Registered Admins can Edit Quiz.")
+    mongo.db.quizzes.update_one({"quizDetails.quizId":qId},{
+        "$set":{"quizDetails":data["quizDetails"],
+                "questions":data["questions"]}
+    })
+    return jsonify(message="Quiz Edited Successfully.")
+
+@app.route("/delete-questions", methods=["POST"])
+@jwt_required()
+def deleteQuestion():
+    data = request.get_json() or []
+    removeQuestions(data)
+    return jsonify(message="Questions Deleted Successfully")
+    
+@app.route('/generate-ai-question',methods=["GET"])
+@jwt_required()
+def getAIQuestion():
+    data=request.json
+    return jsonify(message="Question Generated Successfully")
 if __name__ == "__main__":
     app.run(port=5001,debug=True)

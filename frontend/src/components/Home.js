@@ -54,12 +54,18 @@ export default function Home() {
   );
 
   const avatarLetter = user.name ? user.name[0].toUpperCase() : "U";
+  
   const isQuizLive = (quiz) => {
     const now = new Date();
     const start = new Date(quiz.startTime);
     const end = new Date(start.getTime() + quiz.duration * 60000);
     return now >= start && now <= end;
   };
+
+  // Filter quizzes based on user type
+  const displayedQuizzes = user.userType === "admin" 
+    ? upcoming.filter(q => q.adminIds && q.adminIds.includes(user.username))
+    : upcoming;
 
   return (
     <div className="home-page">
@@ -121,22 +127,26 @@ export default function Home() {
         <div className="section-header">
           <div className="section-title-wrap">
             <h2 className="section-title">
-              Open Quizzes
+              {user.userType === "admin" ? "My Open Quizzes" : "Open Quizzes"}
             </h2>
-            <p className="section-subtitle">Jump into a quiz and test your knowledge</p>
+            <p className="section-subtitle">
+              {user.userType === "admin" ? "Manage your created quizzes" : "Jump into a quiz and test your knowledge"}
+            </p>
           </div>
         </div>
 
         <div className="quizzes-grid">
-          {upcoming.length === 0 ? (
+          {displayedQuizzes.length === 0 ? (
             <div className="empty-state">
               <div className="empty-icon">📭</div>
-              <h3>No Open Quizzes</h3>
-              <p>Check back later for new challenges!</p>
+              <h3>No Quizzes Found</h3>
+              <p>Check back later or create a new one!</p>
             </div>
           ) : (
-            upcoming.map((q, idx) => {
+            displayedQuizzes.map((q, idx) => {
               const live = isQuizLive(q);
+              const hasStarted = new Date(q.startTime) <= new Date();
+
               return (
                 <div key={idx} className={`quiz-card ${live ? 'live' : ''}`}>
                   {live && <div className="live-badge">
@@ -177,14 +187,29 @@ export default function Home() {
 
                   <div className="quiz-id">ID: {q.id}</div>
 
-                  {live && (
-                    <button
-                      className="quiz-join-btn"
-                      onClick={() => window.open(`/give-quiz/${q.id}`, "_blank", "fullscreen=yes")}
-                    >
-                      Join Now
-                      <span className="btn-arrow">→</span>
-                    </button>
+                  {/* Logic for Buttons based on User Type */}
+                  {user.userType === "admin" ? (
+                    // Admin View: Edit Button (Only if not started)
+                    !hasStarted && (
+                      <button
+                        className="quiz-join-btn"
+                        onClick={() => window.location.href = `/edit-quiz/${q.id}`}
+                      >
+                        Edit Quiz
+                        <span className="btn-arrow">✎</span>
+                      </button>
+                    )
+                  ) : (
+                    // Student View: Join Button (Only if Live)
+                    live && (
+                      <button
+                        className="quiz-join-btn"
+                        onClick={() => window.open(`/give-quiz/${q.id}`, "_blank", "fullscreen=yes")}
+                      >
+                        Join Now
+                        <span className="btn-arrow">→</span>
+                      </button>
+                    )
                   )}
                 </div>
               );
@@ -192,7 +217,6 @@ export default function Home() {
           )}
         </div>
       </div>
-
       {/* Floating Action Buttons */}
       {user.userType === "student" && (
         <button className="fab primary" onClick={() => setShowJoinModal(true)}>

@@ -134,11 +134,6 @@ const ResultsPage = () => {
             <span className="tooltip">Profile</span>
           </button>
 
-          <button className="nav-btn tooltip-container">
-            <span><BarChart2 size={22} /></span>
-            <span className="nav-text">Performance</span>
-            <span className="tooltip">Performance</span>
-          </button>
         </nav>
 
         <button className="logout-btn tooltip-container" onClick={logout}>
@@ -208,7 +203,7 @@ const ResultsPage = () => {
                       </div>
                       <div className="stat-item date-hide-mobile">
                         <span className="stat-label">Submitted</span>
-                        <span className="stat-value sm">{new Date(item.endTime).toLocaleDateString()}</span>
+                        <span className="stat-value sm">{new Date(item.endTime).toLocaleTimeString()}</span>
                       </div>
                     </div>
 

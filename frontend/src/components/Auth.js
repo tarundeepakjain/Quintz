@@ -109,7 +109,7 @@ export default function QuintzAuth() {
             <div className="logo-icon">Q</div>
             <h1 className="logo-text">QUINTZ</h1>
           </div>
-          <p className="auth-subtitle">Your Ultimate Learning Platform</p>
+          <p className="auth-subtitle">Your Own Quiz Platform</p>
           
           {/* User Type Toggle */}
           <div className="toggle-wrapper">
