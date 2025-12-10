@@ -93,7 +93,7 @@ export default function EditQuiz() {
         }
 
         // 1. Fetch User Profile
-        const profileRes = await axios.get("http://localhost:5001/profile", {
+        const profileRes = await axios.get("https://quintz.onrender.com/profile", {
           headers: { Authorization: "Bearer " + token },
         });
 
@@ -106,7 +106,7 @@ export default function EditQuiz() {
 
         // 2. Fetch Tags
         try {
-          const tagsRes = await axios.get("http://localhost:5001/get-tags", {
+          const tagsRes = await axios.get("https://quintz.onrender.com/get-tags", {
             headers: { Authorization: "Bearer " + token },
           });
           const tagsData = tagsRes.data.tags || tagsRes.data;
@@ -117,7 +117,7 @@ export default function EditQuiz() {
 
         // 3. Fetch Quiz Data
         if (quizId) {
-            const quizRes = await axios.get(`http://localhost:5001/quiz/${quizId}`, {
+            const quizRes = await axios.get(`https://quintz.onrender.com/quiz/${quizId}`, {
                 headers: { Authorization: "Bearer " + token },
             });
             
@@ -228,7 +228,7 @@ export default function EditQuiz() {
     if (window.confirm("Are you sure you want to delete this quiz? This action cannot be undone.")) {
         try {
             const token = localStorage.getItem("access");
-            await axios.get(`http://localhost:5001/delete-quiz/${quizId}`, {
+            await axios.get(`https://quintz.onrender.com/delete-quiz/${quizId}`, {
                 headers: { Authorization: "Bearer " + token }
             });
             alert("Quiz deleted successfully.");
@@ -250,7 +250,7 @@ export default function EditQuiz() {
     setGeneratedQuestion(null);
     try {
       const token = localStorage.getItem("access");
-      const res = await axios.post("http://localhost:5001/generate-ai-question", 
+      const res = await axios.post("https://quintz.onrender.com/generate-ai-question", 
         { tag: aiTag, subject: quizDetails.subject },
         { headers: { Authorization: "Bearer " + token } }
       );
@@ -285,7 +285,7 @@ export default function EditQuiz() {
     
     try {
       const token = localStorage.getItem("access");
-      const res = await axios.get("http://localhost:5001/get-all-questions", {
+      const res = await axios.get("https://quintz.onrender.com/get-all-questions", {
         headers: { Authorization: "Bearer " + token }
       });
       setPyqList(res.data);
@@ -379,19 +379,19 @@ export default function EditQuiz() {
         // Example Update Logic:
         // 1. Send new questions to add-questions to get their IDs
         let QuestionIds = [];
-        const addedRes = await axios.post("http://localhost:5001/add-questions", questions, {
+        const addedRes = await axios.post("https://quintz.onrender.com/add-questions", questions, {
             headers:{Authorization : "Bearer "+token},
         });
         QuestionIds = addedRes.data.questions;
 
         if(removedQuestionIds.length>0){
-            const delRes = await axios.post("http://localhost:5001/delete-questions",removedQuestionIds,{
+            const delRes = await axios.post("https://quintz.onrender.com/delete-questions",removedQuestionIds,{
                 headers:{Authorization:"Bearer "+token},
             })
             console.log(delRes.data.message);
         }
         // 2. Perform the update (Assuming an endpoint like /update-quiz exists or reusing create logic logic)
-        const res = await axios.post("http://localhost:5001/edit-quiz",{
+        const res = await axios.post("https://quintz.onrender.com/edit-quiz",{
           quizDetails:payload,
           questions:QuestionIds,
         },{

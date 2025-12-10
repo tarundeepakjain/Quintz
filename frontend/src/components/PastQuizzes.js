@@ -26,7 +26,7 @@ export default function PastQuizzes() {
     const fetchPastQuizzes = async () => {
       try {
         const token = localStorage.getItem("access");
-        const res = await axios.get("http://localhost:5001/past-quizzes", {
+        const res = await axios.get("https://quintz.onrender.com/past-quizzes", {
           headers: { Authorization: "Bearer " + token },
         });
         setPastQuizzes(res.data);

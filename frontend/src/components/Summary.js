@@ -40,12 +40,12 @@ export default function Summary() {
         }
 
         // 1. Fetch All Results to calculate Rank & get User Data
-        const res1 = await axios.get(`http://localhost:5001/quiz-results/${quizId}`, {
+        const res1 = await axios.get(`https://quintz.onrender.com/quiz-results/${quizId}`, {
             headers: { Authorization: "Bearer " + token },
         });
 
         // 2. Fetch Quiz Questions
-        const res2 = await axios.get(`http://localhost:5001/quiz/${quizId}`,{
+        const res2 = await axios.get(`https://quintz.onrender.com/quiz/${quizId}`,{
           headers:{Authorization:"Bearer "+token},
         });
 

@@ -11,13 +11,13 @@ export default function Home() {
     try {
       const token = localStorage.getItem("access");
 
-      const res = await axios.get("http://localhost:5001/profile", {
+      const res = await axios.get("https://quintz.onrender.com/profile", {
         headers: { Authorization: "Bearer " + token }
       });
 
       setUser(res.data.user);
 
-      const quizzes = await axios.get("http://localhost:5001/get-public-quizzes", {
+      const quizzes = await axios.get("https://quintz.onrender.com/get-public-quizzes", {
         headers: { Authorization: "Bearer " + token }
       })
       console.log(quizzes.data);

@@ -38,11 +38,11 @@ const ResultsPage = () => {
            return;
         }
 
-        const res = await axios.get(`http://localhost:5001/quiz-results/${quizId}`, {
+        const res = await axios.get(`https://quintz.onrender.com/quiz-results/${quizId}`, {
             headers: { Authorization: "Bearer " + token },
         });
         
-        const user = await axios.get("http://localhost:5001/profile", {
+        const user = await axios.get("https://quintz.onrender.com/profile", {
           headers: { Authorization: "Bearer " + token }
         });
         

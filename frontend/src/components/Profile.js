@@ -17,7 +17,7 @@ export default function Profile() {
   const fetchProfile = async () => {
     try {
       const token = localStorage.getItem("access");
-      const res = await axios.get("http://localhost:5001/profile", {
+      const res = await axios.get("https://quintz.onrender.com/profile", {
         headers: { Authorization: "Bearer " + token }
       });
       setUser(res.data.user);
@@ -50,7 +50,7 @@ export default function Profile() {
   const fetchPerformance = async () => {
     try {
       const token = localStorage.getItem("access");
-      const res = await axios.get("http://localhost:5001/get-performance", {
+      const res = await axios.get("https://quintz.onrender.com/get-performance", {
         headers: { Authorization: "Bearer " + token }
       });
       setPerformance(res.data);
@@ -94,7 +94,7 @@ export default function Profile() {
     if (passwordForm.newPass === passwordForm.confirmPass && passwordForm.newPass.length > 0) {
       try {
         const token = localStorage.getItem("access");
-        const res = await axios.post("http://localhost:5001/change-password", {
+        const res = await axios.post("https://quintz.onrender.com/change-password", {
           username: user.username, oldPass: passwordForm.oldPass, newPass: passwordForm.newPass
         }, { headers: { Authorization: "Bearer " + token } });
         alert(res.data.message);
@@ -112,7 +112,7 @@ export default function Profile() {
     e.preventDefault();
     try {
       const token = localStorage.getItem("access");
-      const res = await axios.post("http://localhost:5001/edit-profile", editForm, {
+      const res = await axios.post("https://quintz.onrender.com/edit-profile", editForm, {
         headers: { Authorization: "Bearer " + token }
       });
       alert(res.data.message);

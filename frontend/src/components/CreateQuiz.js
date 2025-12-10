@@ -85,7 +85,7 @@ export default function CreateQuiz() {
           return;
         }
 
-        const res = await axios.get("http://localhost:5001/profile", {
+        const res = await axios.get("https://quintz.onrender.com/profile", {
           headers: { Authorization: "Bearer " + token },
         });
 
@@ -99,7 +99,7 @@ export default function CreateQuiz() {
 
         // Fetch Tags
         try {
-          const tagsRes = await axios.get("http://localhost:5001/get-tags", {
+          const tagsRes = await axios.get("https://quintz.onrender.com/get-tags", {
             headers: { Authorization: "Bearer " + token },
           });
           const tagsData = tagsRes.data.tags || tagsRes.data;
@@ -184,7 +184,7 @@ export default function CreateQuiz() {
     try {
       const token = localStorage.getItem("access");
       // Mocking the endpoint as per instructions logic
-      const res = await axios.post("http://localhost:5001/generate-ai-question", 
+      const res = await axios.post("https://quintz.onrender.com/generate-ai-question", 
         { tag: aiTag, subject: quizDetails.subject },
         { headers: { Authorization: "Bearer " + token } }
       );
@@ -220,7 +220,7 @@ export default function CreateQuiz() {
     
     try {
       const token = localStorage.getItem("access");
-      const res = await axios.get("http://localhost:5001/get-all-questions", {
+      const res = await axios.get("https://quintz.onrender.com/get-all-questions", {
         headers: { Authorization: "Bearer " + token }
       });
       setPyqList(res.data);
@@ -308,10 +308,10 @@ export default function CreateQuiz() {
 
     try {
       const token = localStorage.getItem("access");
-      const qidRaw = await axios.post("http://localhost:5001/add-questions", processedQuestions, {
+      const qidRaw = await axios.post("https://quintz.onrender.com/add-questions", processedQuestions, {
           headers:{Authorization : "Bearer "+token},
       });
-      const res = await axios.post("http://localhost:5001/create-quiz", {
+      const res = await axios.post("https://quintz.onrender.com/create-quiz", {
           quizDetails:payload,
           questions:qidRaw.data.questions,
       }, {

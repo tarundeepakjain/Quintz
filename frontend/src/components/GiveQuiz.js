@@ -68,7 +68,7 @@ export default function GiveQuiz() {
     try {
       const token = localStorage.getItem("access");
       // GET request to fetch quiz details
-      const res = await axios.get(`http://localhost:5001/quiz/${quizId}`, { 
+      const res = await axios.get(`https://quintz.onrender.com/quiz/${quizId}`, { 
         headers: { Authorization: "Bearer " + token } 
       });
       if(res.data.message==="Already Given" || res.data.message==="Quiz Doesn't Exist" || res.data.message=="Quiz hasn't started."){
@@ -159,7 +159,7 @@ export default function GiveQuiz() {
         endTime: endTime
       };
 
-      await axios.post("http://localhost:5001/quiz/submit", payload, {
+      await axios.post("https://quintz.onrender.com/quiz/submit", payload, {
         headers: { Authorization: "Bearer " + token }
       });
 

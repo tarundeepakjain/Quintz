@@ -41,7 +41,7 @@ export default function QuintzAuth() {
   const handleLogin = async (e) => {
     e.preventDefault();
     try {
-      const res = await axios.post("http://localhost:5001/login", {
+      const res = await axios.post("https://quintz.onrender.com/login", {
         userType: currentUserType,
         username: formData.loginEmail,
         password: formData.loginPassword
@@ -66,7 +66,7 @@ export default function QuintzAuth() {
       return;
     }
     try {
-      const res = await axios.post("http://localhost:5001/signup", {
+      const res = await axios.post("https://quintz.onrender.com/signup", {
         userType: currentUserType,
         name: formData.signupName,
         username: formData.signupEmail,
@@ -94,7 +94,7 @@ export default function QuintzAuth() {
                 const { email, sub, name } = userInfo.data;
                 
                 // 4. Send this JSON to your Backend to save in MongoDB
-                const res = await axios.post("http://localhost:5001/signup", {
+                const res = await axios.post("https://quintz.onrender.com/signup", {
                   userType: currentUserType,
                   name:name,
                   username: email,
@@ -125,7 +125,7 @@ export default function QuintzAuth() {
                 const { email, sub } = userInfo.data;
                 
                 // 4. Send this JSON to your Backend to save in MongoDB
-                const res = await axios.post("http://localhost:5001/login", {
+                const res = await axios.post("https://quintz.onrender.com/login", {
                   userType: currentUserType,
                   username: email,
                   password: sub
