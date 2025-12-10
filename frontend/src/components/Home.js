@@ -95,12 +95,13 @@ export default function Home() {
           <h1 className="hero-title">
             Ready to
             <br />
-            <span className="gradient-text">Challenge Yourself?</span>
+            <span className="gradient-text">{user.userType==="student"?"Challenge Yourself?":"Challenge Others?"}</span>
           </h1>
 
           <p className="hero-subtitle">
-            Dive into interactive quizzes designed to sharpen your mind and boost your skills.
-            <strong> Learn smarter. Practice better. Grow faster.</strong>
+            {user.userType==="admin"?"Create and control engaging quizzes with ease.":"Dive into interactive quizzes designed to sharpen your mind and boost your skills."}
+            <br></br>
+            <strong>{user.userType==="admin"?"Manage smarter. Host better. Grow bigger.":"Learn smarter. Practice better. Grow faster."}</strong>
           </p>
 
           <div className="hero-stats">
@@ -127,7 +128,7 @@ export default function Home() {
         <div className="section-header">
           <div className="section-title-wrap">
             <h2 className="section-title">
-              {user.userType === "admin" ? "My Open Quizzes" : "Open Quizzes"}
+              {user.userType === "admin" ? "My Quizzes" : "Open Quizzes"}
             </h2>
             <p className="section-subtitle">
               {user.userType === "admin" ? "Manage your created quizzes" : "Jump into a quiz and test your knowledge"}

@@ -214,7 +214,7 @@ const ResultsPage = () => {
                           className="action-btn"
                           onClick={() => (window.location.href = `/summary/${quizId}/${item.username}`)}
                         >
-                          <span>Analysis</span> <ChevronRight size={16} />
+                          <span>Summary</span> <ChevronRight size={16} />
                         </button>
                       )}
 
@@ -224,7 +224,7 @@ const ResultsPage = () => {
                             className="action-btn primary"
                             onClick={() => (window.location.href = `/summary/${quizId}/${item.username}`)}
                           >
-                            <span>View Analysis</span> <ChevronRight size={16} />
+                            <span>View Summary</span> <ChevronRight size={16} />
                           </button>
                         ) : (
                           <div className="locked-badge">

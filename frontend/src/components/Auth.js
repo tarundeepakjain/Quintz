@@ -9,6 +9,7 @@ import {
   Shield,
   GraduationCap
 } from 'lucide-react';
+import { useGoogleLogin } from '@react-oauth/google';
 
 export default function QuintzAuth() {
   const [currentUserType, setCurrentUserType] = useState('student');
@@ -80,10 +81,68 @@ export default function QuintzAuth() {
     }
   };
 
-  const handleGoogleSignIn = () => {
-    alert(`Google Sign-In for ${currentUserType.charAt(0).toUpperCase() + currentUserType.slice(1)}\n\nIn production, this would redirect to Google OAuth.`);
-  };
+  const handleGoogleSignUp = useGoogleLogin({
+        onSuccess: async (tokenResponse) => {
+            try {
+                // 2. Use the Access Token to get user info from Google
+                const userInfo = await axios.get(
+                    'https://www.googleapis.com/oauth2/v3/userinfo',
+                    { headers: { Authorization: `Bearer ${tokenResponse.access_token}` } }
+                );
 
+                // 3. Extract the data you want
+                const { email, sub, name } = userInfo.data;
+                
+                // 4. Send this JSON to your Backend to save in MongoDB
+                const res = await axios.post("http://localhost:5001/signup", {
+                  userType: currentUserType,
+                  name:name,
+                  username: email,
+                  password: sub
+                });
+                console.log(res.data);
+                alert(res.data.message);
+                // Use absolute path for reliability
+                window.location.href = `${window.location.origin}/auth`; 
+
+            } catch (error) {
+                console.error("Error fetching Google user info:", error);
+            }
+        },
+        onError: error => console.log('Login Failed:', error)
+    });
+
+  const handleGoogleLogin = useGoogleLogin({
+        onSuccess: async (tokenResponse) => {
+            try {
+                // 2. Use the Access Token to get user info from Google
+                const userInfo = await axios.get(
+                    'https://www.googleapis.com/oauth2/v3/userinfo',
+                    { headers: { Authorization: `Bearer ${tokenResponse.access_token}` } }
+                );
+
+                // 3. Extract the data you want
+                const { email, sub } = userInfo.data;
+                
+                // 4. Send this JSON to your Backend to save in MongoDB
+                const res = await axios.post("http://localhost:5001/login", {
+                  userType: currentUserType,
+                  username: email,
+                  password: sub
+                });
+
+                console.log(res.data);
+                localStorage.setItem("access", res.data.access_token);
+                alert(res.data.message);
+                // Use absolute path for reliability
+                window.location.href = `${window.location.origin}/`; 
+
+            } catch (error) {
+                console.error("Error fetching Google user info:", error);
+            }
+        },
+        onError: error => console.log('Login Failed:', error)
+    });
   const GoogleIcon = () => (
     <svg className="google-icon" viewBox="0 0 24 24">
       <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -236,7 +295,7 @@ export default function QuintzAuth() {
             <span>OR</span>
           </div>
 
-          <button className="google-btn" onClick={handleGoogleSignIn}>
+          <button className="google-btn" onClick={currentForm==='signup'?handleGoogleSignUp:handleGoogleLogin}>
             <GoogleIcon />
             <span>Continue with Google</span>
           </button>

@@ -483,7 +483,7 @@ export default function CreateQuiz() {
                           </div>
                         )}
                         {q.type === "integer" && (
-                          <div className="integer-row"><label>Correct Answer:</label><input type="number" className="int-input" value={q.correctInteger} onChange={(e) => handleQuestionChange(idx, "correctInteger", e.target.value)} placeholder="e.g. 25" /></div>
+                          <div className="integer-row"><label>Correct Answer:</label><input type="number" className="int-input" value={q.correctInteger} onChange={(e) => handleQuestionChange(idx, "correctInteger", e.target.value)} placeholder="e.g. 25" required/></div>
                         )}
                       </div>
                     ))

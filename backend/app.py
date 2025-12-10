@@ -1,4 +1,7 @@
 import os
+import json
+import re
+import google.generativeai as genai
 
 from flask import Flask,request,jsonify
 
@@ -23,6 +26,8 @@ app = Flask(__name__)
 # Setup the Flask-JWT-Extended extension
 app.config["JWT_SECRET_KEY"] = os.environ.get("JWT_SECRET_KEY")  # Change this!
 app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(days=7) #Login Required in every 7 days
+genai.configure(api_key=os.environ.get("GEMINI_API_KEY"))
+
 jwt = JWTManager(app)
 
 app.config["MONGO_URI"] = os.environ.get("MONGO_URI")
@@ -41,6 +46,61 @@ def removeQuestions(questions):
         if ques["askedIn"]>0:
             qDB.insert_one(ques)
 
+def get_gemini_mcq(topic):
+    """
+    Generates an MCQ using Gemini with strict JSON enforcement.
+    """
+    # 1. Use generation_config to force JSON MIME type (Available in Gemini 1.5 models)
+    generation_config = {
+        "temperature": 1,
+        "top_p": 0.95,
+        "top_k": 64,
+        "max_output_tokens": 8192,
+        "response_mime_type": "application/json",
+    }
+
+    model = genai.GenerativeModel(
+        model_name="gemini-2.5-flash",
+        generation_config=generation_config,
+        system_instruction=(
+            "You are a quiz generation API. "
+            "Output ONLY raw JSON. No Markdown. No commentary."
+        )
+    )
+
+    # 2. The Prompt
+    prompt = f"""
+    Generate a multiple-choice question about: {topic}.
+
+    Follow this exact JSON schema:
+    {{
+      "type": "mcq",
+      "text": "Question text here",
+      "options": ["Option 1", "Option 2", "Option 3", "Option 4"],
+      "correctIndex": 0
+    }}
+    
+    Constraints:
+    - The "options" array must contain exactly 4 strings.
+    - "correctIndex" must be an integer (0-3).
+    """
+
+    try:
+        response = model.generate_content(prompt)
+        response_text = response.text
+
+        # 3. Extra Safety: Sanitize Markdown just in case
+        # (Removes ```json and ``` if the model ignores the mime_type instruction)
+        clean_text = re.sub(r"```json|```", "", response_text).strip()
+        
+        # 4. Parse into a Python dictionary
+        data = json.loads(clean_text)
+        return data
+
+    except Exception as e:
+        print(f"Error generating quiz: {e}")
+        return None
+    
 @app.route("/signup", methods=["POST"])
 def register():
     statAdmin={"totalQuizzes": 0,"Total Participants": 0,"Public Quizzes":0,"MM Quiz made":0}
@@ -126,7 +186,14 @@ def addQuestion():
     for ques in data:
         if("_id" in ques):
             mongo.db.questions.update_one({"_id":ObjectId(ques["_id"])},{
-                "$inc":{"askedIn":1}
+                "$inc":{"askedIn":1},
+                "$set":{
+                    "type": ques.get("type"),
+                    "text": ques.get("text"),
+                    "options": ques.get("options") if ques.get("type") == "mcq" else [],
+                    "subject":ques.get("subject"),
+                    "tag":ques.get("tag") 
+                }
             })
             questions.append(ques["_id"])
             continue
@@ -143,6 +210,12 @@ def addQuestion():
             doc["correctIndex"] = ques.get("correctIndex")
         else:
             doc["correctInteger"] = ques.get("correctInteger")
+        res = mongo.db.miscellaneous.find_one({"type":"tags"})
+        if (ques["subject"].upper() not in res) or (ques["tag"].lower() not in res[ques["subject"].upper()]):
+            mongo.db.miscellaneous.update_one({"type":"tags"},{
+                "$push":{ques["subject"].upper():ques["tag"].lower()},
+            })  
+
         res = mongo.db.questions.insert_one(doc)
         questions.append(str(res.inserted_id))
 
@@ -302,8 +375,10 @@ def results(quizID):
 @app.route('/get-public-quizzes',methods=["GET"])
 @jwt_required()
 def getPublicQuizzes():
+    currUser=get_jwt_identity()
+    userType = mongo.db.users.find_one({"username":currUser})["userType"]
     quizzes=[]
-    res = mongo.db.quizzes.find({"quizDetails.visibility":"public"})
+    res = mongo.db.quizzes.find({"quizDetails.visibility":"public"}) if userType=="student" else mongo.db.quizzes.find({"quizDetails.adminIds":currUser})
     for qz in res:
         startTime=datetime.strptime(qz["quizDetails"]["startTime"],'%Y-%m-%dT%H:%M')
         endTime=startTime+timedelta(minutes=qz["quizDetails"]["durationMinutes"])
@@ -352,6 +427,7 @@ def getQuestion():
 @app.route('/get-tags/<subject>',methods=["GET"])
 @jwt_required()
 def getTags(subject):
+    if subject=="": return []
     res = mongo.db.miscellaneous.find_one({"type":"tags"})
     return res[subject] if (subject in res) else []
 
@@ -386,6 +462,8 @@ def getPerformance():
     y=[]
     x=[]
     res = mongo.db.miscellaneous.find_one({"type":"performance"})
+    if currUser not in res:
+        return jsonify(x=[0],y=[0])
     for k,v in res[currUser].items():
         x.append(k)
         y.append(v)
@@ -400,6 +478,7 @@ def editQuiz():
     qId=data["quizDetails"]["quizId"]
     if currUser not in data["quizDetails"]["adminIds"]:
         return jsonify(message="Only Registered Admins can Edit Quiz.")
+    
     mongo.db.quizzes.update_one({"quizDetails.quizId":qId},{
         "$set":{"quizDetails":data["quizDetails"],
                 "questions":data["questions"]}
@@ -413,10 +492,20 @@ def deleteQuestion():
     removeQuestions(data)
     return jsonify(message="Questions Deleted Successfully")
     
-@app.route('/generate-ai-question',methods=["GET"])
+@app.route('/generate-ai-question',methods=["POST"])
 @jwt_required()
 def getAIQuestion():
-    data=request.json
-    return jsonify(message="Question Generated Successfully")
+    data = request.get_json()
+    topic = data.get('subject')+"-"+data.get("tag")
+
+    quiz_data = get_gemini_mcq(topic)
+
+    if quiz_data:
+        # Returns the exact format your frontend needs
+        return jsonify(quiz_data), 200
+    else:
+        return jsonify({"error": "Failed to generate question"}), 500
+    
+
 if __name__ == "__main__":
     app.run(port=5001,debug=True)
