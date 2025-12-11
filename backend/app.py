@@ -388,9 +388,15 @@ def getPublicQuizzes():
     quizzes=[]
     res = mongo.db.quizzes.find({"quizDetails.visibility":"public"}) if userType=="student" else mongo.db.quizzes.find({"quizDetails.adminIds":currUser})
     for qz in res:
-        startTime=datetime.strptime(qz["quizDetails"]["startTime"],'%Y-%m-%dT%H:%M')
-        endTime=startTime+timedelta(minutes=qz["quizDetails"]["durationMinutes"])
-        now=datetime.now()
+        ist = pytz.timezone("Asia/Kolkata")
+
+        start_time = datetime.fromisoformat(qz["quizDetails"]["startTime"])
+        if start_time.tzinfo is None:
+            start_time = ist.localize(start_time)
+
+        now = datetime.now(ist)
+
+        endTime = start_time + timedelta(minutes=qz["quizDetails"]["durationMinutes"])
         if now<=endTime:
             quizzes.append({
                 "title": qz["quizDetails"]["quizName"],
@@ -410,18 +416,24 @@ def pastQuizzes():
     for qID in res["Quizzes"]:
         qz = mongo.db.quizzes.find_one({"quizDetails.quizId":qID})
         if not qz: continue
-        startTime=datetime.strptime(qz["quizDetails"]["startTime"],'%Y-%m-%dT%H:%M')
-        endTime=startTime+timedelta(minutes=qz["quizDetails"]["durationMinutes"])
-        now=datetime.now()
-        #print(qz)
-        if now>endTime:
-            quizzes.append({
-                "title": qz["quizDetails"]["quizName"],
-                "startTime": qz["quizDetails"]["startTime"],
-                "duration": qz["quizDetails"]["durationMinutes"],
-                "resultTime":qz["quizDetails"]["resultTime"], 
-                "id": qz["quizDetails"]["quizId"]
-            })
+    ist = pytz.timezone("Asia/Kolkata")
+
+    start_time = datetime.fromisoformat(qz["quizDetails"]["startTime"])
+    if start_time.tzinfo is None:
+        start_time = ist.localize(start_time)
+
+    now = datetime.now(ist)
+
+    endTime = start_time + timedelta(minutes=qz["quizDetails"]["durationMinutes"])
+    #print(qz)
+    if now>endTime:
+        quizzes.append({
+            "title": qz["quizDetails"]["quizName"],
+            "startTime": qz["quizDetails"]["startTime"],
+            "duration": qz["quizDetails"]["durationMinutes"],
+            "resultTime":qz["quizDetails"]["resultTime"], 
+            "id": qz["quizDetails"]["quizId"]
+        })
     return quizzes
 
 @app.route('/get-all-questions',methods=["GET"])
