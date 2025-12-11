@@ -17,7 +17,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 
 from bson import ObjectId
 
-from datetime import timedelta,datetime
+from datetime import timedelta,datetime,timezone
 
 load_dotenv()
 
@@ -281,7 +281,7 @@ def quiz(quizID):
         message="Already Given"
     start_time = datetime.fromisoformat(qz["quizDetails"]["startTime"])
     end_time = start_time + timedelta(minutes=qz["quizDetails"]["durationMinutes"])
-    now = datetime.now()
+    now = datetime.now(timezone.utc)
     if start_time<=now and end_time>=now:
         message="Quiz Found."
     ques = []
