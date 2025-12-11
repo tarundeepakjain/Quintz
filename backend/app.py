@@ -276,14 +276,14 @@ def quiz(quizID):
     if not qz:
         return jsonify(message="Quiz Doesn't Exist")
     qzR = mongo.db.quizResults.find_one({"quizID":quizID})
-    message="Quiz Found"
+    message="Quiz hasn't started."
     if currUser in qzR:
         message="Already Given"
     start_time = datetime.fromisoformat(qz["quizDetails"]["startTime"])
     end_time = start_time + timedelta(minutes=qz["quizDetails"]["durationMinutes"])
     now = datetime.now()
-    if start_time>now or end_time<now:
-        message="Quiz hasn't started."
+    if start_time>=now and end_time<=now:
+        message="Quiz Found."
     ques = []
     for q in qz["questions"]:
         qu=mongo.db.questions.find_one({"_id":ObjectId(q)})
