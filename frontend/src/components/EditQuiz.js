@@ -513,7 +513,7 @@ export default function EditQuiz() {
                     <div className="divider-label">Scoring</div>
                     <div className="form-group"><label>Duration (min)</label><input type="number" name="durationMinutes" value={quizDetails.durationMinutes} onChange={handleDetailChange} /></div>
                     <div className="form-group"><label>Total Marks</label><input type="number" name="totalMarks" value={quizDetails.totalMarks} onChange={handleDetailChange} /></div>
-                    <div className="form-group"><label>Neg. Mark</label><input type="number" name="negativeMarkPerQuestion" value={quizDetails.negativeMarkPerQuestion} onChange={handleDetailChange} /></div>
+                    <div className="form-group"><label>Neg. Mark</label><input type="number" min="0" name="negativeMarkPerQuestion" value={quizDetails.negativeMarkPerQuestion} onChange={handleDetailChange} /></div>
                     <div className="form-group"><label>Max Attempts</label><input type="number" name="maxAttempts" value={quizDetails.maxAttempts} readOnly className="read-only" /></div>
                     <div className="form-group full">
                         <label>Visibility</label>
