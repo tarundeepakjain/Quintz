@@ -49,7 +49,6 @@ export default function QuintzAuth() {
 
       console.log(res.data);
       localStorage.setItem("access", res.data.access_token);
-      alert(res.data.message);
       // Use absolute path for reliability
       window.location.href = `${window.location.origin}/`; 
     } catch (err) {
