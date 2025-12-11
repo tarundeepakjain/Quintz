@@ -279,8 +279,6 @@ def quiz(quizID):
         return jsonify(message="Quiz Doesn't Exist")
     qzR = mongo.db.quizResults.find_one({"quizID":quizID})
     message="Quiz hasn't started."
-    if currUser in qzR:
-        message="Already Given"
     ist = pytz.timezone("Asia/Kolkata")
 
     start_time = datetime.fromisoformat(qz["quizDetails"]["startTime"])
@@ -292,6 +290,8 @@ def quiz(quizID):
     end_time = start_time + timedelta(minutes=qz["quizDetails"]["durationMinutes"])
     if start_time<=now and end_time>=now:
         message="Quiz Found."
+    if currUser in qzR:
+        message="Already Given"
     ques = []
     for q in qz["questions"]:
         qu=mongo.db.questions.find_one({"_id":ObjectId(q)})
