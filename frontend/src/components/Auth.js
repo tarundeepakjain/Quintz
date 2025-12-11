@@ -91,12 +91,12 @@ export default function QuintzAuth() {
 
                 // 3. Extract the data you want
                 const { email, sub, name } = userInfo.data;
-                
+                const username = email.split('@')[0];
                 // 4. Send this JSON to your Backend to save in MongoDB
                 const res = await axios.post("https://quintz.onrender.com/signup", {
                   userType: currentUserType,
                   name:name,
-                  username: email,
+                  username: username,
                   password: sub
                 });
                 console.log(res.data);
@@ -122,11 +122,11 @@ export default function QuintzAuth() {
 
                 // 3. Extract the data you want
                 const { email, sub } = userInfo.data;
-                
+                const username = email.split('@')[0];
                 // 4. Send this JSON to your Backend to save in MongoDB
                 const res = await axios.post("https://quintz.onrender.com/login", {
                   userType: currentUserType,
-                  username: email,
+                  username: username,
                   password: sub
                 });
 
