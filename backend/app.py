@@ -280,6 +280,8 @@ def quiz(quizID):
     if currUser in qzR:
         message="Already Given"
     start_time = datetime.fromisoformat(qz["quizDetails"]["startTime"])
+    if start_time.tzinfo is None:
+        start_time = start_time.replace(tzinfo=timezone.utc)
     end_time = start_time + timedelta(minutes=qz["quizDetails"]["durationMinutes"])
     now = datetime.now(timezone.utc)
     if start_time<=now and end_time>=now:
