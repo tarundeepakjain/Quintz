@@ -282,7 +282,7 @@ def quiz(quizID):
     start_time = datetime.fromisoformat(qz["quizDetails"]["startTime"])
     end_time = start_time + timedelta(minutes=qz["quizDetails"]["durationMinutes"])
     now = datetime.now()
-    if start_time>=now and end_time<=now:
+    if start_time<=now and end_time>=now:
         message="Quiz Found."
     ques = []
     for q in qz["questions"]:

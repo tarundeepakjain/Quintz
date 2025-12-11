@@ -72,6 +72,7 @@ export default function GiveQuiz() {
         headers: { Authorization: "Bearer " + token } 
       });
       if(res.data.message==="Already Given" || res.data.message==="Quiz Doesn't Exist" || res.data.message=="Quiz hasn't started."){
+        console.log(res.data);
         setQuizData(null);
         setLoading(false);
         return;
