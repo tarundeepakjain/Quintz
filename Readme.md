@@ -1,1 +1,1 @@
-Hello. This is my first project.
+Tech Stack - ReactJS,Flask,Gemini API,OAuth,JWT
