@@ -19,6 +19,8 @@ from bson import ObjectId
 
 from datetime import timedelta,datetime,timezone
 
+import pytz
+
 load_dotenv()
 
 app = Flask(__name__)
@@ -279,11 +281,15 @@ def quiz(quizID):
     message="Quiz hasn't started."
     if currUser in qzR:
         message="Already Given"
+    ist = pytz.timezone("Asia/Kolkata")
+
     start_time = datetime.fromisoformat(qz["quizDetails"]["startTime"])
     if start_time.tzinfo is None:
-        start_time = start_time.replace(tzinfo=timezone.utc)
+        start_time = ist.localize(start_time)
+
+    now = datetime.now(ist)
+
     end_time = start_time + timedelta(minutes=qz["quizDetails"]["durationMinutes"])
-    now = datetime.now(timezone.utc)
     if start_time<=now and end_time>=now:
         message="Quiz Found."
     ques = []
