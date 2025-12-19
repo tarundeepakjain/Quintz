@@ -1,11 +1,10 @@
 # Quintz — Online Quiz & Assessment Platform
 
 **Live Demo:**  
-(Add deployed frontend link here)  
-Example: https://quintz.vercel.app
+https://quintz.vercel.app
 
 **Backend API:**  
-(Add backend deployment link if applicable)
+https://quintz.onrender.com
 
 ---
 
@@ -104,14 +103,39 @@ The platform is suitable for academic assessments, practice quizzes, and competi
   - Users
   - Quizzes
   - Questions
-  - Submissions
-  - Results and analytics
+  - Quiz Results
+  - Miscellaneous(Tags, User Performance, etc.)
 
 ---
 
 ## Project Structure (High Level)
 
-
+QUINTZ/
+├── backend/
+│ ├── pycache/ # Python cache files
+│ ├── env1/ # Virtual environment
+│ ├── .env # Environment variables
+│ ├── .gitignore # Backend gitignore
+│ ├── app.py # Main Flask application
+│ ├── gunicorn_config.py # Gunicorn server configuration
+│ ├── pymongo_get_database.py # MongoDB connection utility
+│ ├── requirements.txt # Backend dependencies
+│ └── rough.py # Testing / experimental code
+│
+├── frontend/
+│ ├── node_modules/ # Frontend dependencies
+│ ├── public/ # Static public assets
+│ ├── src/
+│ │ ├── components/ # Reusable React components
+│ │ ├── App.js # Root React component
+│ │ └── index.js # React entry point
+│ ├── .gitignore # Frontend gitignore
+│ ├── package.json # Frontend dependencies and scripts
+│ └── package-lock.json # Dependency lock file
+│
+├── .vscode/ # VS Code configuration
+├── README.md # Project documentation
+└── Readme.md # Additional documentation file
 ---
 
 ## Key Highlights
@@ -126,7 +150,6 @@ The platform is suitable for academic assessments, practice quizzes, and competi
 
 ## Future Enhancements
 
-- Time-bound quizzes
 - Question difficulty classification
 - Advanced admin analytics dashboard
 - Exportable quiz performance reports
@@ -136,5 +159,5 @@ The platform is suitable for academic assessments, practice quizzes, and competi
 ## Author
 
 Tarun Jain  
-GitHub: https://github.com/tarundeepakjain  
+Email: tarundeepakjain@gmail.com  
 LinkedIn: https://linkedin.com/in/tarundeepakjain
