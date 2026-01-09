@@ -112,31 +112,31 @@ The platform is suitable for academic assessments, practice quizzes, and competi
 
 QUINTZ/
 ├── backend/
-│ ├── pycache/ # Python cache files
-│ ├── env1/ # Virtual environment
-│ ├── .env # Environment variables
-│ ├── .gitignore # Backend gitignore
-│ ├── app.py # Main Flask application
-│ ├── gunicorn_config.py # Gunicorn server configuration
-│ ├── pymongo_get_database.py # MongoDB connection utility
-│ ├── requirements.txt # Backend dependencies
-│ └── rough.py # Testing / experimental code
+│   ├── __pycache__/              # Python cache files
+│   ├── env1/                     # Virtual environment
+│   ├── .env                      # Environment variables
+│   ├── .gitignore                # Backend gitignore
+│   ├── app.py                    # Main Flask application
+│   ├── gunicorn_config.py        # Gunicorn server configuration
+│   ├── pymongo_get_database.py   # MongoDB connection utility
+│   ├── requirements.txt          # Backend dependencies
+│   └── rough.py                  # Testing / experimental code
 │
 ├── frontend/
-│ ├── node_modules/ # Frontend dependencies
-│ ├── public/ # Static public assets
-│ ├── src/
-│ │ ├── components/ # Reusable React components
-│ │ ├── App.js # Root React component
-│ │ └── index.js # React entry point
-│ ├── .gitignore # Frontend gitignore
-│ ├── package.json # Frontend dependencies and scripts
-│ └── package-lock.json # Dependency lock file
+│   ├── node_modules/             # Frontend dependencies
+│   ├── public/                   # Static public assets
+│   ├── src/
+│   │   ├── components/           # Reusable React components
+│   │   ├── App.js                # Root React component
+│   │   └── index.js              # React entry point
+│   ├── .gitignore                # Frontend gitignore
+│   ├── package.json              # Frontend dependencies & scripts
+│   └── package-lock.json         # Dependency lock file
 │
-├── .vscode/ # VS Code configuration
-├── README.md # Project documentation
-└── Readme.md # Additional documentation file
----
+├── .vscode/                      # VS Code configuration
+├── README.md                     # Project documentation
+└── Readme.md                     # Additional documentation
+
 
 ## Key Highlights
 
