@@ -109,7 +109,7 @@ The platform is suitable for academic assessments, practice quizzes, and competi
 ---
 
 ## Project Structure (High Level)
-
+```
 QUINTZ/
 ├── backend/
 │   ├── __pycache__/              # Python cache files
@@ -136,7 +136,7 @@ QUINTZ/
 ├── .vscode/                      # VS Code configuration
 ├── README.md                     # Project documentation
 └── Readme.md                     # Additional documentation
-
+```
 
 ## Key Highlights
 
