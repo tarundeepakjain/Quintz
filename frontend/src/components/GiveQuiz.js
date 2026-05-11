@@ -12,6 +12,7 @@ import {
   Save, 
   Flag,
   Play,
+  AlertTriangle,
   Home as HomeIcon
 } from "lucide-react";
 
@@ -35,6 +36,7 @@ export default function GiveQuiz() {
   const [isStarted, setIsStarted] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [showPaletteMobile, setShowPaletteMobile] = useState(false);
+  const [showSubmitModal, setShowSubmitModal] = useState(false); // New state for confirmation
 
   // Timer Ref to clear interval
   const timerRef = useRef(null);
@@ -52,7 +54,8 @@ export default function GiveQuiz() {
         setTimeLeft((prev) => {
           if (prev <= 1) {
             clearInterval(timerRef.current);
-            submitQuiz(); // Auto-submit on time end
+            // Auto-submit on time end does NOT show modal
+            handleFinalSubmit(); 
             return 0;
           }
           return prev - 1;
@@ -67,38 +70,29 @@ export default function GiveQuiz() {
   const fetchQuiz = async () => {
     try {
       const token = localStorage.getItem("access");
-      // GET request to fetch quiz details
       const res = await axios.get(`https://quintz.onrender.com/quiz/${quizId}`, { 
         headers: { Authorization: "Bearer " + token } 
       });
       if(res.data.message==="Already Given" || res.data.message==="Quiz Doesn't Exist" || res.data.message=="Quiz hasn't started."){
-        console.log(res.data);
         setQuizData(null);
         setLoading(false);
         return;
       }
       setQuizData(res.data);
-      // Initialize timer based on durationMinutes from backend
-    if (res.data.quizDetails) {
-      const durationMinutes = res.data.quizDetails.durationMinutes;
-      const startTimeISO = res.data.quizDetails.startTime; // e.g. "2025-12-07T10:30:00Z"
-
-      const now = new Date();
-      const startTime = new Date(startTimeISO);
-
-      // Time difference in seconds
-      const elapsedSeconds = Math.floor((now - startTime) / 1000);
-
-      // Remaining time
-      const remainingSeconds = durationMinutes * 60 - elapsedSeconds;
-
-      setTimeLeft(Math.max(remainingSeconds, 0)); // never negative
-    }
+      
+      if (res.data.quizDetails) {
+        const durationMinutes = res.data.quizDetails.durationMinutes;
+        const startTimeISO = res.data.quizDetails.startTime;
+        const now = new Date();
+        const startTime = new Date(startTimeISO);
+        const elapsedSeconds = Math.floor((now - startTime) / 1000);
+        const remainingSeconds = durationMinutes * 60 - elapsedSeconds;
+        setTimeLeft(Math.max(remainingSeconds, 0));
+      }
 
       setLoading(false);
     } catch (err) {
       console.error("Error fetching quiz:", err);
-      // Fallback logic for network error removed as requested, keeping core logic
     }
   };
 
@@ -123,8 +117,6 @@ export default function GiveQuiz() {
 
   const changeQuestion = (index) => {
     if (index < 0 || index >= quizData.questions.length) return;
-    
-    // Mark new question as visited
     setVisited(prev => new Set(prev).add(index));
     setCurrentQuestionIndex(index);
     setShowPaletteMobile(false);
@@ -147,28 +139,26 @@ export default function GiveQuiz() {
     setAnswers(newAnswers);
   };
 
-  const submitQuiz = async () => {
+  // Helper for the actual API call
+  const handleFinalSubmit = async () => {
     clearInterval(timerRef.current);
-    
     try {
       const token = localStorage.getItem("access");
-      const endTime = new Date().toISOString(); // ISO Format
-
+      const endTime = new Date().toISOString();
       const payload = {
         quizID: quizId,
-        answers: answers, // Format: { "qId": markedAnswer }
+        answers: answers,
         endTime: endTime
       };
-
       await axios.post("https://quintz.onrender.com/quiz/submit", payload, {
         headers: { Authorization: "Bearer " + token }
       });
-
       setIsSubmitted(true);
     } catch (err) {
       console.error("Error submitting quiz:", err);
-      // Fallback: If network fails, still show the summary screen so the user doesn't get stuck
       setIsSubmitted(true); 
+    } finally {
+        setShowSubmitModal(false);
     }
   };
 
@@ -176,10 +166,9 @@ export default function GiveQuiz() {
     const isAnswered = answers[qId] !== undefined && answers[qId] !== "";
     const isMarked = markedForReview.has(index);
     const isVis = visited.has(index);
-
     if (isMarked) return "review";
     if (isAnswered) return "answered";
-    if (isVis) return "visited"; // Visited but not answered
+    if (isVis) return "visited";
     return "not-visited";
   };
 
@@ -203,28 +192,22 @@ export default function GiveQuiz() {
     </div>
   );
 
-  // 1. Instructions Screen
   if (!isStarted) {
     return (
       <div className="quiz-container">
         <style>{css}</style>
-        
-        {/* Header for Consistency */}
         <header className="quiz-header">
           <div className="brand">
-            {/* UPDATED LOGO */}
             <div className="logo-icon">Q</div>
             <span className="divider">|</span>
             <span className="quiz-name">{quizData.quizDetails.quizName}</span>
           </div>
         </header>
-
         <div className="instruction-card">
           <div className="instruction-header">
             <h1>{quizData.quizDetails.quizName}</h1>
             <span className="badge">{quizData.quizDetails.subject}</span>
           </div>
-          
           <div className="instruction-content">
             <h3>Instructions</h3>
             <ul>
@@ -234,7 +217,6 @@ export default function GiveQuiz() {
               <li>Green indicates answered, Red indicates visited but not answered.</li>
               <li>The quiz will <strong>auto-submit</strong> when the timer reaches zero.</li>
             </ul>
-            
             <div className="quiz-meta">
               <div className="meta-item">
                 <span>⏱️ Duration</span>
@@ -246,7 +228,6 @@ export default function GiveQuiz() {
               </div>
             </div>
           </div>
-
           <button className="start-btn" onClick={startQuiz}>
             <span>Start Quiz</span> <Play size={20} fill="currentColor" />
           </button>
@@ -255,26 +236,20 @@ export default function GiveQuiz() {
     );
   }
 
-  // 2. Summary Screen (Post Submit)
   if (isSubmitted) {
     const totalQ = quizData.questions.length;
     const answeredCount = Object.keys(answers).length;
     const markedCount = markedForReview.size;
-    
     return (
       <div className="quiz-container">
         <style>{css}</style>
-        
-        {/* Header for Consistency */}
         <header className="quiz-header">
           <div className="brand">
-            {/* UPDATED LOGO */}
             <div className="logo-icon">Q</div>
             <span className="divider">|</span>
             <span className="quiz-name">{quizData.quizDetails.quizName}</span>
           </div>
         </header>
-
         <div className="summary-card">
           <div className="summary-header">
             <div className="success-icon-bg">
@@ -283,7 +258,6 @@ export default function GiveQuiz() {
             <h2>Quiz Submitted Successfully!</h2>
             <p>Here is your attempt summary</p>
           </div>
-
           <div className="summary-grid">
             <div className="summary-item">
               <span className="lbl">Total Questions</span>
@@ -302,7 +276,6 @@ export default function GiveQuiz() {
               <span className="val warning">{markedCount}</span>
             </div>
           </div>
-
           <button className="home-btn" onClick={() => window.close()}>
             <LogOut size={18} /> Exit
           </button>
@@ -311,7 +284,6 @@ export default function GiveQuiz() {
     );
   }
 
-  // 3. Active Quiz Interface
   const currentQ = quizData.questions[currentQuestionIndex];
   const isLastQuestion = currentQuestionIndex === quizData.questions.length - 1;
 
@@ -319,27 +291,39 @@ export default function GiveQuiz() {
     <div className="quiz-interface">
       <style>{css}</style>
 
-      {/* Top Bar */}
+      {/* Confirmation Modal */}
+      {showSubmitModal && (
+        <div className="modal-overlay">
+          <div className="modal-card">
+            <div className="modal-icon-warning">
+                <AlertTriangle size={32} />
+            </div>
+            <h3>Submit Quiz?</h3>
+            <p>Are you sure you want to finish? You have answered <b>{Object.keys(answers).length}</b> out of <b>{quizData.questions.length}</b> questions.</p>
+            <div className="modal-actions">
+                <button className="modal-btn-cancel" onClick={() => setShowSubmitModal(false)}>Go Back</button>
+                <button className="modal-btn-confirm" onClick={handleFinalSubmit}>Yes, Submit</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <header className="quiz-header">
         <div className="brand">
-          {/* UPDATED LOGO */}
           <div className="logo-icon">Q</div>
           <span className="divider">|</span>
           <span className="quiz-name">{quizData.quizDetails.quizName}</span>
         </div>
-        
         <div className="timer-block" style={{ color: timeLeft < 60 ? '#ff4757' : 'inherit' }}>
           <Clock size={20} />
           <span>{formatTime(timeLeft)}</span>
         </div>
-
         <button className="mobile-palette-toggle" onClick={() => setShowPaletteMobile(!showPaletteMobile)}>
           {showPaletteMobile ? <X /> : <Menu />}
         </button>
       </header>
 
       <div className="quiz-body">
-        {/* Left Sidebar: Question Palette */}
         <aside className={`question-palette ${showPaletteMobile ? 'open' : ''}`}>
           <div className="palette-header">
             <h3>Question Palette</h3>
@@ -350,7 +334,6 @@ export default function GiveQuiz() {
               <div className="legend-item"><span className="dot not-visited"></span> Not Visited</div>
             </div>
           </div>
-
           <div className="palette-grid">
             {quizData.questions.map((q, idx) => {
               const status = getQuestionStatus(idx, q._id);
@@ -369,7 +352,6 @@ export default function GiveQuiz() {
           </div>
         </aside>
 
-        {/* Right Area: Question Display */}
         <main className="question-area">
           <div className="question-card">
             <div className="q-header">
@@ -379,19 +361,12 @@ export default function GiveQuiz() {
                 <span className="q-marks">+{quizData.quizDetails.totalMarks/quizData.questions.length}, -{quizData.quizDetails.negativeMarkPerQuestion}</span>
               </div>
             </div>
-
-            <div className="q-text">
-              {currentQ.text}
-            </div>
-
+            <div className="q-text">{currentQ.text}</div>
             <div className="q-options">
               {currentQ.type === 'mcq' ? (
                 <div className="mcq-grid">
                   {currentQ.options.map((opt, idx) => (
-                    <label 
-                      key={idx} 
-                      className={`option-label ${answers[currentQ._id] === idx ? 'selected' : ''}`}
-                    >
+                    <label key={idx} className={`option-label ${answers[currentQ._id] === idx ? 'selected' : ''}`}>
                       <input
                         type="radio"
                         name={`question-${currentQ._id}`}
@@ -417,7 +392,6 @@ export default function GiveQuiz() {
             </div>
           </div>
 
-          {/* Bottom Navigation Bar */}
           <div className="quiz-footer">
              <div className="footer-left">
                 <button className="action-btn secondary" onClick={toggleMarkForReview}>
@@ -428,7 +402,6 @@ export default function GiveQuiz() {
                   Clear Response
                 </button>
              </div>
-
              <div className="footer-right">
                 <button 
                   className="nav-btn-q" 
@@ -437,16 +410,12 @@ export default function GiveQuiz() {
                 >
                   <ChevronLeft size={20} /> Previous
                 </button>
-
                 {!isLastQuestion ? (
-                  <button 
-                    className="nav-btn-q next" 
-                    onClick={() => changeQuestion(currentQuestionIndex + 1)}
-                  >
+                  <button className="nav-btn-q next" onClick={() => changeQuestion(currentQuestionIndex + 1)}>
                     Next <ChevronRight size={20} />
                   </button>
                 ) : (
-                   <button className="submit-quiz-btn" onClick={submitQuiz}>
+                   <button className="submit-quiz-btn" onClick={() => setShowSubmitModal(true)}>
                      Submit Quiz <Save size={18} />
                    </button>
                 )}
@@ -491,7 +460,7 @@ const css = `
 /* --- Instruction Screen --- */
 .instruction-card {
   max-width: 800px;
-  margin: 100px auto 40px; /* Increased top margin for header */
+  margin: 100px auto 40px;
   background: white;
   border-radius: 24px;
   padding: 40px;
@@ -509,10 +478,8 @@ const css = `
 .instruction-header h1 { margin: 0; color: #6a11cb; font-size: 28px; }
 .badge { background: #e0d4fc; color: #6a11cb; padding: 5px 12px; border-radius: 20px; font-size: 14px; font-weight: 600; text-transform: uppercase; }
 
-/* Fixed: Added padding-left so bullets aren't cut off */
 .instruction-content ul { list-style: none; padding-left: 20px; margin-bottom: 30px; }
 .instruction-content li { padding: 10px 0; border-bottom: 1px dashed #eee; font-size: 16px; color: #555; position: relative; }
-/* Adjusted margin-left relative to the new padding */
 .instruction-content li:before { content: "•"; color: #6a11cb; font-weight: bold; display: inline-block; width: 1em; margin-left: -1em; }
 
 .quiz-meta { display: flex; gap: 40px; margin-bottom: 40px; background: #f9f7ff; padding: 20px; border-radius: 12px; }
@@ -542,7 +509,7 @@ const css = `
 /* --- Summary Screen --- */
 .summary-card {
   max-width: 600px;
-  margin: 100px auto 40px; /* Increased top margin for header */
+  margin: 100px auto 40px;
   background: white;
   border-radius: 24px;
   padding: 50px;
@@ -630,7 +597,7 @@ const css = `
 
 .quiz-body {
   display: flex;
-  padding-top: 70px; /* Header height */
+  padding-top: 70px;
   height: 100vh;
   box-sizing: border-box;
 }
@@ -650,7 +617,7 @@ const css = `
 .legend-item { display: flex; align-items: center; gap: 6px; font-size: 11px; color: #666; }
 .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
 .dot.answered { background: #00d084; }
-.dot.visited { background: #ff4757; } /* Usually red in exams for 'Not Answered' */
+.dot.visited { background: #ff4757; }
 .dot.review { background: #ff9f43; }
 .dot.not-visited { background: #eee; border: 1px solid #ddd; }
 
@@ -803,6 +770,39 @@ const css = `
 }
 .submit-quiz-btn:hover { transform: translateY(-2px); }
 
+/* --- Modal --- */
+.modal-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.6);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 1000;
+    backdrop-filter: blur(4px);
+}
+.modal-card {
+    background: white;
+    padding: 30px;
+    border-radius: 20px;
+    max-width: 400px;
+    width: 90%;
+    text-align: center;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+    animation: zoomIn 0.3s ease;
+}
+.modal-icon-warning {
+    width: 60px; height: 60px;
+    background: #fff8e1;
+    color: #ff9f43;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 20px;
+}
+.modal-card h3 { margin: 0 0 10px; color: #333; }
+.modal-card p { color: #666; margin-bottom: 25px; line-height: 1.5; }
+.modal-actions { display: flex; gap: 15px; justify-content: center; }
+.modal-btn-cancel { padding: 10px 20px; border-radius: 8px; border: 1px solid #ddd; background: white; cursor: pointer; font-weight: 600; }
+.modal-btn-confirm { padding: 10px 20px; border-radius: 8px; border: none; background: #6a11cb; color: white; cursor: pointer; font-weight: 600; box-shadow: 0 4px 10px rgba(106, 17, 203, 0.3); }
+
 /* --- Responsive --- */
 @media(max-width: 900px) {
   .mobile-palette-toggle { display: block; }
@@ -821,4 +821,5 @@ const css = `
 
 @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes zoomIn { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
 `;
